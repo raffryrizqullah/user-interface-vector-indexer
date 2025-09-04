@@ -9,6 +9,9 @@ import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons'
 import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
+import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
+import PageHeader from '@/components/ui/PageHeader';
+import ContentContainer from '@/components/ui/ContentContainer';
 import {
   Dialog,
   DialogBackdrop,
@@ -53,6 +56,24 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
   const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records'>('dashboard');
+
+  // Breadcrumb configuration
+  const getBreadcrumbs = (): BreadcrumbItem[] => {
+    switch (currentView) {
+      case 'dashboard':
+        return [
+          { name: 'Dashboard', current: true, onClick: () => setCurrentView('dashboard') }
+        ];
+      case 'upsert-records':
+        return [
+          { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
+          { name: 'Documents', current: false, onClick: () => setCurrentView('upsert-records') },
+          { name: 'Upload', current: true }
+        ];
+      default:
+        return [];
+    }
+  };
 
   // Navigation items with onClick handlers
   const navigation = [
@@ -505,80 +526,68 @@ export default function DashboardPage() {
         </a>
       </div>
 
-      <main className="py-10 lg:pl-72">
-        <div className="px-4 sm:px-6 lg:px-8 space-y-8">
+      <main className="py-6 lg:py-10 lg:pl-72">
+        <ContentContainer size="lg">
+          {/* Breadcrumbs */}
+          <div className="mb-6">
+            <Breadcrumbs items={getBreadcrumbs()} />
+          </div>
+
           {currentView === 'dashboard' && (
             <>
-              {/* Welcome section */}
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Welcome back, {user?.username}!
-                </h1>
-                <p className="mt-2 text-gray-600">
-                  Here&apos;s what&apos;s happening with your vector database today.
-                </p>
+              {/* Page Header */}
+              <PageHeader
+                title={`Welcome back, ${user?.username}!`}
+                description="Here's what's happening with your vector database today."
+                icon={<HeartIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
+
+              {/* Dashboard Content */}
+              <div className="space-y-8">
+                {/* Pinecone Index Information */}
+                <PineconeIndexCard 
+                  indexInfo={pineconeIndexInfo}
+                  isLoading={dataLoading && !dashboardData}
+                />
+
+                {/* Enhanced Stats cards */}
+                <StatsWithIcons 
+                  stats={stats} 
+                  isLoading={dataLoading}
+                />
+
+                {/* Quick Access Cards */}
+                <QuickAccessCards 
+                  items={quickAccessItems}
+                  isLoading={dataLoading}
+                />
+
+                {/* Recent Activity */}
+                <RecentActivity isLoading={dataLoading} />
               </div>
-
-              {/* Pinecone Index Information */}
-              <PineconeIndexCard 
-                indexInfo={pineconeIndexInfo}
-                isLoading={dataLoading && !dashboardData}
-              />
-
-              {/* Enhanced Stats cards */}
-              <StatsWithIcons 
-                stats={stats} 
-                isLoading={dataLoading}
-              />
-
-              {/* Quick Access Cards */}
-              <QuickAccessCards 
-                items={quickAccessItems}
-                isLoading={dataLoading}
-              />
-
-              {/* Recent Activity */}
-              <RecentActivity isLoading={dataLoading} />
             </>
           )}
 
           {currentView === 'upsert-records' && (
             <>
-              {/* Breadcrumb navigation */}
-              <nav className="flex mb-4" aria-label="Breadcrumb">
-                <ol className="flex items-center space-x-2 text-sm">
-                  <li>
-                    <button 
-                      onClick={() => setCurrentView('dashboard')}
-                      className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                    >
-                      Dashboard
-                    </button>
-                  </li>
-                  <li className="text-gray-300">/</li>
-                  <li className="text-gray-900 font-medium">Upload Documents</li>
-                </ol>
-              </nav>
-
-              {/* Page header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                  Upsert Records
-                </h1>
-                <p className="mt-2 text-sm text-gray-600">
-                  Upload PDF documents and create vector embeddings with custom metadata
-                </p>
-              </div>
+              {/* Page Header */}
+              <PageHeader
+                title="Upload Documents"
+                description="Upload PDF documents and create vector embeddings with custom metadata"
+                icon={<DocumentPlusIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
 
               {/* Upsert form */}
-              <div className="bg-white shadow-sm rounded-lg">
-                <div className="px-6 py-8">
+              <ContentContainer variant="card" className="p-0">
+                <div className="p-6 sm:p-8">
                   <UpsertRecordsForm />
                 </div>
-              </div>
+              </ContentContainer>
             </>
           )}
-        </div>
+        </ContentContainer>
       </main>
     </div>
   );
