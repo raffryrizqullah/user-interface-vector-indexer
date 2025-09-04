@@ -10,6 +10,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface PineconeIndexInfo {
+  success: boolean;
+  index_name: string;
   metric: string;
   dimensions: number;
   host: string;
@@ -18,8 +20,7 @@ interface PineconeIndexInfo {
   type: string;
   capacityMode: string;
   recordCount: number;
-  environment: string;
-  project: string;
+  message: string;
 }
 
 interface PineconeIndexCardProps {
@@ -28,6 +29,8 @@ interface PineconeIndexCardProps {
 }
 
 const defaultIndexInfo: PineconeIndexInfo = {
+  success: true,
+  index_name: 'vector-indexer-index',
   metric: 'cosine',
   dimensions: 3072,
   host: 'standard-dense-py-rjoj9sl.svc.gcp-europe-west4-de1d.pinecone.io',
@@ -36,8 +39,7 @@ const defaultIndexInfo: PineconeIndexInfo = {
   type: 'Dense',
   capacityMode: 'Serverless',
   recordCount: 39,
-  environment: 'development',
-  project: 'vector-indexer'
+  message: 'Index is healthy and operational'
 };
 
 export default function PineconeIndexCard({ 
@@ -49,11 +51,20 @@ export default function PineconeIndexCard({
       <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
         <div className="px-4 py-5 sm:p-6">
           <div className="animate-pulse">
-            <div className="flex items-center mb-4">
-              <div className="h-6 w-6 bg-gray-300 rounded mr-2"></div>
-              <div className="h-6 bg-gray-300 rounded w-48"></div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gray-300 rounded mr-3"></div>
+                <div>
+                  <div className="h-5 bg-gray-300 rounded w-48 mb-2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-64"></div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                <div className="h-6 bg-gray-300 rounded w-16"></div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-2">
                   <div className="h-4 bg-gray-300 rounded w-20"></div>
@@ -61,6 +72,23 @@ export default function PineconeIndexCard({
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case when no data is available
+  if (!indexInfo) {
+    return (
+      <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="text-center py-8">
+            <ServerIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Unable to load Pinecone data</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Could not connect to Pinecone API. Please check your connection and try again.
+            </p>
           </div>
         </div>
       </div>
@@ -76,8 +104,13 @@ export default function PineconeIndexCard({
               <ServerIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Pinecone Index Configuration</h3>
-              <p className="text-sm text-gray-500">Current vector database settings and status</p>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-semibold text-gray-900">Pinecone Index Configuration</h3>
+                <div className={`w-3 h-3 rounded-full ${indexInfo.success ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              </div>
+              <p className="text-sm text-gray-500">
+                {indexInfo.index_name} • {indexInfo.message}
+              </p>
             </div>
           </div>
           

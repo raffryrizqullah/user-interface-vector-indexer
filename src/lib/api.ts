@@ -163,12 +163,14 @@ export class ApiService {
   }
 
   // Helper methods for dashboard statistics
-  static calculateStats(data: any) {
+  static calculateStats(data: any, previousData?: any) {
     const stats = {
       totalDocuments: 0,
       vectorRecords: 0,
       activeNamespaces: 0,
       activeUsers: 0,
+      systemHealth: 'healthy',
+      lastUpdated: new Date().toISOString(),
       changes: {
         totalDocuments: { value: 0, type: 'increase' as const },
         vectorRecords: { value: 0, type: 'increase' as const },
@@ -177,43 +179,134 @@ export class ApiService {
       }
     };
 
+    // Get previous stats for real change calculation
+    const previousStats = previousData ? this.calculateStatsValues(previousData) : null;
+
+    // Calculate Vector Records from namespace stats
     if (data.namespaceStats?.stats) {
       stats.vectorRecords = data.namespaceStats.stats.vector_count || 0;
-      stats.changes.vectorRecords = {
-        value: Math.floor(stats.vectorRecords * 0.1), // Simulate 10% growth
-        type: 'increase'
-      };
+      
+      if (previousStats) {
+        const change = stats.vectorRecords - previousStats.vectorRecords;
+        stats.changes.vectorRecords = {
+          value: Math.abs(change),
+          type: change >= 0 ? 'increase' : 'decrease'
+        };
+      } else {
+        // Fallback to simulated data for first load
+        stats.changes.vectorRecords = {
+          value: Math.floor(stats.vectorRecords * 0.1),
+          type: 'increase'
+        };
+      }
     }
 
-    if (data.recordsList) {
-      // Estimate documents from unique prefixes in vector IDs
+    // Calculate Total Documents from unique vector ID prefixes
+    if (data.recordsList?.vector_ids) {
       const uniquePrefixes = new Set(
-        data.recordsList.vector_ids?.map((id: string) => 
+        data.recordsList.vector_ids.map((id: string) => 
           id.split('_')[0]
-        ) || []
+        ).filter(Boolean)
       );
       stats.totalDocuments = uniquePrefixes.size;
-      stats.changes.totalDocuments = {
-        value: Math.floor(stats.totalDocuments * 0.05), // Simulate 5% growth
-        type: 'increase'
-      };
+      
+      if (previousStats) {
+        const change = stats.totalDocuments - previousStats.totalDocuments;
+        stats.changes.totalDocuments = {
+          value: Math.abs(change),
+          type: change >= 0 ? 'increase' : 'decrease'
+        };
+      } else {
+        stats.changes.totalDocuments = {
+          value: Math.floor(stats.totalDocuments * 0.05),
+          type: 'increase'
+        };
+      }
     }
 
+    // Calculate Active Users
     if (data.users) {
       stats.activeUsers = data.users.filter((user: User) => user.is_active).length;
-      stats.changes.activeUsers = {
-        value: Math.floor(stats.activeUsers * 0.1),
+      
+      if (previousStats) {
+        const change = stats.activeUsers - previousStats.activeUsers;
+        stats.changes.activeUsers = {
+          value: Math.abs(change),
+          type: change >= 0 ? 'increase' : 'decrease'
+        };
+      } else {
+        stats.changes.activeUsers = {
+          value: Math.floor(stats.activeUsers * 0.1),
+          type: 'increase'
+        };
+      }
+    }
+
+    // Calculate Active Namespaces from Pinecone config
+    stats.activeNamespaces = this.calculateActiveNamespaces(data);
+    if (previousStats) {
+      const change = stats.activeNamespaces - previousStats.activeNamespaces;
+      stats.changes.activeNamespaces = {
+        value: Math.abs(change),
+        type: change >= 0 ? 'increase' : 'decrease'
+      };
+    } else {
+      stats.changes.activeNamespaces = {
+        value: 1,
         type: 'increase'
       };
     }
 
-    // Static namespace count for now
-    stats.activeNamespaces = 3;
-    stats.changes.activeNamespaces = {
-      value: 1,
-      type: 'increase'
-    };
+    // Determine system health
+    stats.systemHealth = this.determineSystemHealth(data);
 
     return stats;
+  }
+
+  // Helper method to calculate just the numeric values for comparison
+  private static calculateStatsValues(data: any) {
+    return {
+      totalDocuments: data.recordsList?.vector_ids ? 
+        new Set(data.recordsList.vector_ids.map((id: string) => id.split('_')[0]).filter(Boolean)).size : 0,
+      vectorRecords: data.namespaceStats?.stats?.vector_count || 0,
+      activeNamespaces: this.calculateActiveNamespaces(data),
+      activeUsers: data.users ? data.users.filter((user: User) => user.is_active).length : 0
+    };
+  }
+
+  // Calculate active namespaces from available data
+  private static calculateActiveNamespaces(data: any) {
+    // If we have namespace stats, we know at least one namespace exists
+    let count = 0;
+    
+    if (data.namespaceStats?.namespace_exists) {
+      count = 1; // Default namespace exists
+    }
+    
+    // Add additional namespaces if we have pinecone config data
+    if (data.pineconeHealth?.config?.namespace) {
+      count = Math.max(count, 1);
+    }
+    
+    // For now, return a reasonable estimate based on available data
+    // In a real scenario, we'd query all namespaces
+    return Math.max(count, 1); // At least 1 namespace if we have any data
+  }
+
+  // Determine overall system health
+  private static determineSystemHealth(data: any) {
+    const checks = {
+      basicHealth: data.basicHealth?.status === 'healthy',
+      pineconeHealth: data.pineconeHealth?.success === true,
+      namespaceExists: data.namespaceStats?.namespace_exists === true,
+      hasUsers: data.users && data.users.length > 0
+    };
+
+    const healthyCount = Object.values(checks).filter(Boolean).length;
+    const totalChecks = Object.keys(checks).length;
+
+    if (healthyCount === totalChecks) return 'healthy';
+    if (healthyCount >= totalChecks * 0.75) return 'warning';
+    return 'error';
   }
 }

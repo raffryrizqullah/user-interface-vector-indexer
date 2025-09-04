@@ -17,6 +17,8 @@ export interface StatItem {
   change: string;
   changeType: 'increase' | 'decrease';
   href?: string;
+  healthStatus?: 'healthy' | 'warning' | 'error';
+  lastUpdated?: string;
 }
 
 interface StatsWithIconsProps {
@@ -112,13 +114,30 @@ export default function StatsWithIcons({ stats = defaultStats, isLoading = false
         {stats.map((item) => (
           <div
             key={item.id}
-            className="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6 border border-gray-200 hover:shadow-md transition-shadow duration-200"
+            className={`relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6 border hover:shadow-md transition-shadow duration-200 ${
+              item.healthStatus === 'error' ? 'border-red-200 bg-red-50' : 
+              item.healthStatus === 'warning' ? 'border-yellow-200 bg-yellow-50' : 
+              'border-gray-200'
+            }`}
           >
             <dt>
-              <div className="absolute rounded-md bg-indigo-500 p-3">
+              <div className={`absolute rounded-md p-3 ${
+                item.healthStatus === 'error' ? 'bg-red-500' : 
+                item.healthStatus === 'warning' ? 'bg-yellow-500' : 
+                'bg-indigo-500'
+              }`}>
                 <item.icon aria-hidden="true" className="size-6 text-white" />
               </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">{item.name}</p>
+              <div className="ml-16 flex items-center justify-between">
+                <p className="truncate text-sm font-medium text-gray-500">{item.name}</p>
+                {item.healthStatus && (
+                  <div className={`w-2 h-2 rounded-full ${
+                    item.healthStatus === 'healthy' ? 'bg-green-500' : 
+                    item.healthStatus === 'warning' ? 'bg-yellow-500' : 
+                    'bg-red-500'
+                  }`}></div>
+                )}
+              </div>
             </dt>
             <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
               <p className="text-2xl font-semibold text-gray-900">{item.stat}</p>

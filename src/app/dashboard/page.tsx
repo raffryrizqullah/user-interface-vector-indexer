@@ -54,6 +54,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
 
@@ -78,11 +79,24 @@ export default function DashboardPage() {
       console.log('🔄 Fetching dashboard data...');
       setDataLoading(true);
       
+      // Store previous data before fetching new data
+      if (dashboardData) {
+        setPreviousDashboardData(dashboardData);
+        // Also persist to localStorage for cross-session comparison
+        localStorage.setItem('previousDashboardData', JSON.stringify(dashboardData));
+      } else {
+        // Try to load previous data from localStorage on first load
+        const storedPreviousData = localStorage.getItem('previousDashboardData');
+        if (storedPreviousData) {
+          setPreviousDashboardData(JSON.parse(storedPreviousData));
+        }
+      }
+      
       const data = await ApiService.getDashboardData();
       setDashboardData(data);
       
-      // Calculate and set stats
-      const calculatedStats = ApiService.calculateStats(data);
+      // Calculate and set stats with previous data for real changes
+      const calculatedStats = ApiService.calculateStats(data, previousDashboardData);
       const statsItems: StatItem[] = [
         {
           id: 1,
@@ -91,7 +105,9 @@ export default function DashboardPage() {
           icon: DocumentTextIcon,
           change: calculatedStats.changes.totalDocuments.value.toString(),
           changeType: calculatedStats.changes.totalDocuments.type,
-          href: '#documents'
+          href: '#documents',
+          healthStatus: data.recordsList ? 'healthy' : 'warning',
+          lastUpdated: calculatedStats.lastUpdated
         },
         {
           id: 2,
@@ -100,7 +116,9 @@ export default function DashboardPage() {
           icon: CubeIcon,
           change: calculatedStats.changes.vectorRecords.value.toString(),
           changeType: calculatedStats.changes.vectorRecords.type,
-          href: '#vectors'
+          href: '#vectors',
+          healthStatus: data.namespaceStats?.namespace_exists ? 'healthy' : 'error',
+          lastUpdated: calculatedStats.lastUpdated
         },
         {
           id: 3,
@@ -109,7 +127,9 @@ export default function DashboardPage() {
           icon: FolderIcon,
           change: calculatedStats.changes.activeNamespaces.value.toString(),
           changeType: calculatedStats.changes.activeNamespaces.type,
-          href: '#namespaces'
+          href: '#namespaces',
+          healthStatus: data.pineconeHealth?.success ? 'healthy' : 'error',
+          lastUpdated: calculatedStats.lastUpdated
         },
         {
           id: 4,
@@ -118,7 +138,9 @@ export default function DashboardPage() {
           icon: UserGroupIcon,
           change: calculatedStats.changes.activeUsers.value.toString(),
           changeType: calculatedStats.changes.activeUsers.type,
-          href: '#users'
+          href: '#users',
+          healthStatus: data.users && data.users.length > 0 ? 'healthy' : 'warning',
+          lastUpdated: calculatedStats.lastUpdated
         },
       ];
       
@@ -144,6 +166,8 @@ export default function DashboardPage() {
 
   // Create Pinecone index info from API data
   const pineconeIndexInfo = dashboardData?.pineconeHealth ? {
+    success: dashboardData.pineconeHealth.success || false,
+    index_name: dashboardData.pineconeHealth.index_name || 'vector-indexer-index',
     metric: dashboardData.pineconeHealth.config?.metric || 'cosine',
     dimensions: dashboardData.pineconeHealth.config?.dimension || 3072,
     host: dashboardData.pineconeHealth.host?.replace('https://', '') || 'standard-dense-py-rjoj9sl.svc.gcp-europe-west4-de1d.pinecone.io',
@@ -152,8 +176,7 @@ export default function DashboardPage() {
     type: 'Dense',
     capacityMode: 'Serverless',
     recordCount: dashboardData.namespaceStats?.stats?.vector_count || 39,
-    environment: dashboardData.pineconeHealth.config?.environment || 'development',
-    project: 'vector-indexer'
+    message: dashboardData.pineconeHealth.message || 'Index is healthy and operational'
   } : undefined;
 
   // Create quick access items with real data
