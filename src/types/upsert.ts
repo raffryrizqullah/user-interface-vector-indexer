@@ -4,6 +4,7 @@ export interface UploadedFile {
   name: string;
   size: number;
   type: string;
+  uploadIndex: number;
 }
 
 export interface SourceLink {
