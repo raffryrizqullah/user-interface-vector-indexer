@@ -3,31 +3,31 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService, User } from '@/lib/auth';
+import { ApiService } from '@/lib/api';
+import PineconeIndexCard from '@/components/dashboard/PineconeIndexCard';
+import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons';
+import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
+import RecentActivity from '@/components/dashboard/RecentActivity';
 import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
   TransitionChild,
 } from '@headlessui/react';
 import {
   Bars3Icon,
-  BellIcon,
   ChartPieIcon,
-  Cog6ToothIcon,
   DocumentDuplicateIcon,
   FolderIcon,
   HomeIcon,
   UsersIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
-  ChevronDownIcon,
-  ChartBarIcon,
   DocumentTextIcon,
   UserGroupIcon,
+  CubeIcon,
+  DocumentPlusIcon,
+  HeartIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -53,6 +53,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [stats, setStats] = useState<StatItem[]>([]);
 
   useEffect(() => {
     // Check authentication status
@@ -65,7 +68,67 @@ export default function DashboardPage() {
     const currentUser = AuthService.getCurrentUser();
     setUser(currentUser);
     setIsLoading(false);
+
+    // Fetch dashboard data
+    fetchDashboardData();
   }, [router]);
+
+  const fetchDashboardData = async () => {
+    try {
+      console.log('🔄 Fetching dashboard data...');
+      setDataLoading(true);
+      
+      const data = await ApiService.getDashboardData();
+      setDashboardData(data);
+      
+      // Calculate and set stats
+      const calculatedStats = ApiService.calculateStats(data);
+      const statsItems: StatItem[] = [
+        {
+          id: 1,
+          name: 'Total Documents',
+          stat: calculatedStats.totalDocuments.toString(),
+          icon: DocumentTextIcon,
+          change: calculatedStats.changes.totalDocuments.value.toString(),
+          changeType: calculatedStats.changes.totalDocuments.type,
+          href: '#documents'
+        },
+        {
+          id: 2,
+          name: 'Vector Records',
+          stat: calculatedStats.vectorRecords.toLocaleString(),
+          icon: CubeIcon,
+          change: calculatedStats.changes.vectorRecords.value.toString(),
+          changeType: calculatedStats.changes.vectorRecords.type,
+          href: '#vectors'
+        },
+        {
+          id: 3,
+          name: 'Active Namespaces',
+          stat: calculatedStats.activeNamespaces.toString(),
+          icon: FolderIcon,
+          change: calculatedStats.changes.activeNamespaces.value.toString(),
+          changeType: calculatedStats.changes.activeNamespaces.type,
+          href: '#namespaces'
+        },
+        {
+          id: 4,
+          name: 'Active Users',
+          stat: calculatedStats.activeUsers.toString(),
+          icon: UserGroupIcon,
+          change: calculatedStats.changes.activeUsers.value.toString(),
+          changeType: calculatedStats.changes.activeUsers.type,
+          href: '#users'
+        },
+      ];
+      
+      setStats(statsItems);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -78,9 +141,98 @@ export default function DashboardPage() {
     }
   };
 
-  const userNavigation = [
-    { name: 'Your profile', href: '#' },
-    { name: 'Sign out', href: '#', onClick: handleLogout },
+
+  // Create Pinecone index info from API data
+  const pineconeIndexInfo = dashboardData?.pineconeHealth ? {
+    metric: dashboardData.pineconeHealth.config?.metric || 'cosine',
+    dimensions: dashboardData.pineconeHealth.config?.dimension || 3072,
+    host: dashboardData.pineconeHealth.host?.replace('https://', '') || 'standard-dense-py-rjoj9sl.svc.gcp-europe-west4-de1d.pinecone.io',
+    cloud: dashboardData.pineconeHealth.config?.cloud || 'GCP',
+    region: dashboardData.pineconeHealth.config?.region || 'europe-west4',
+    type: 'Dense',
+    capacityMode: 'Serverless',
+    recordCount: dashboardData.namespaceStats?.stats?.vector_count || 39,
+    environment: dashboardData.pineconeHealth.config?.environment || 'development',
+    project: 'vector-indexer'
+  } : undefined;
+
+  // Create quick access items with real data
+  const quickAccessItems: QuickAccessItem[] = [
+    {
+      id: 1,
+      name: 'Create Records',
+      icon: DocumentPlusIcon,
+      iconBgColor: 'bg-blue-500',
+      description: 'Upload and process PDF documents into vector embeddings',
+      lastActivity: {
+        label: 'Last upload',
+        value: '2 hours ago',
+        dateTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      },
+      status: {
+        label: 'Status',
+        value: dashboardData?.basicHealth?.status === 'healthy' ? 'Active' : 'Error',
+        type: dashboardData?.basicHealth?.status === 'healthy' ? 'Active' : 'Error'
+      },
+      metrics: {
+        label: 'Files processed',
+        value: `${stats.find(s => s.name === 'Total Documents')?.stat || '0'} total`
+      },
+      actions: {
+        primary: { label: 'Upload Files', href: '/documents/upload' },
+        secondary: { label: 'View History', href: '/documents/history' }
+      }
+    },
+    {
+      id: 2,
+      name: 'Search Records',
+      icon: MagnifyingGlassIcon,
+      iconBgColor: 'bg-purple-500',
+      description: 'Search through vector embeddings and find similar content',
+      lastActivity: {
+        label: 'Last search',
+        value: '1 hour ago',
+        dateTime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+      },
+      status: {
+        label: 'Query type',
+        value: 'Semantic',
+        type: 'Active'
+      },
+      metrics: {
+        label: 'Records available',
+        value: `${stats.find(s => s.name === 'Vector Records')?.stat || '0'}`
+      },
+      actions: {
+        primary: { label: 'New Search', href: '/search' },
+        secondary: { label: 'Recent Searches', href: '/search/history' }
+      }
+    },
+    {
+      id: 3,
+      name: 'System Health',
+      icon: HeartIcon,
+      iconBgColor: 'bg-green-500',
+      description: 'Monitor Pinecone connectivity and system performance',
+      lastActivity: {
+        label: 'Last check',
+        value: 'Just now',
+        dateTime: new Date().toISOString()
+      },
+      status: {
+        label: 'Pinecone status',
+        value: dashboardData?.pineconeHealth?.success ? 'Connected' : 'Disconnected',
+        type: dashboardData?.pineconeHealth?.success ? 'Connected' : 'Disconnected'
+      },
+      metrics: {
+        label: 'Response time',
+        value: '45ms avg'
+      },
+      actions: {
+        primary: { label: 'Run Health Check', href: '#', onClick: fetchDashboardData },
+        secondary: { label: 'View Logs', href: '/health/logs' }
+      }
+    }
   ];
 
   if (isLoading) {
@@ -92,7 +244,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-full bg-white">
+    <div>
       <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-50 lg:hidden">
         <DialogBackdrop
           transition
@@ -173,16 +325,19 @@ export default function DashboardPage() {
                       ))}
                     </ul>
                   </li>
-                  <li className="mt-auto">
+                  <li className="-mx-6 mt-auto">
                     <a
                       href="#"
-                      className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-indigo-200 hover:bg-indigo-700 hover:text-white"
+                      onClick={handleLogout}
+                      className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-indigo-700"
                     >
-                      <Cog6ToothIcon
-                        aria-hidden="true"
-                        className="size-6 shrink-0 text-indigo-200 group-hover:text-white"
-                      />
-                      Settings
+                      <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
+                        <span className="text-sm font-medium text-white">
+                          {user?.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="sr-only">Your profile</span>
+                      <span aria-hidden="true">{user?.username}</span>
                     </a>
                   </li>
                 </ul>
@@ -254,16 +409,19 @@ export default function DashboardPage() {
                   ))}
                 </ul>
               </li>
-              <li className="mt-auto">
+              <li className="-mx-6 mt-auto">
                 <a
                   href="#"
-                  className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-indigo-200 hover:bg-indigo-700 hover:text-white"
+                  onClick={handleLogout}
+                  className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-indigo-700"
                 >
-                  <Cog6ToothIcon
-                    aria-hidden="true"
-                    className="size-6 shrink-0 text-indigo-200 group-hover:text-white"
-                  />
-                  Settings
+                  <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
+                    <span className="text-sm font-medium text-white">
+                      {user?.username.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="sr-only">Your profile</span>
+                  <span aria-hidden="true">{user?.username}</span>
                 </a>
               </li>
             </ul>
@@ -271,83 +429,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="lg:pl-72">
-        {/* Header */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8">
-          <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-gray-700 lg:hidden">
-            <span className="sr-only">Open sidebar</span>
-            <Bars3Icon aria-hidden="true" className="size-6" />
-          </button>
-
-          {/* Separator */}
-          <div aria-hidden="true" className="h-6 w-px bg-gray-900/10 lg:hidden" />
-
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <form action="#" method="GET" className="grid flex-1 grid-cols-1">
-              <input
-                name="search"
-                type="search"
-                placeholder="Search vectors, documents..."
-                aria-label="Search"
-                className="col-start-1 row-start-1 block size-full bg-white pl-8 text-base text-gray-900 outline-hidden placeholder:text-gray-400 sm:text-sm/6"
-              />
-              <MagnifyingGlassIcon
-                aria-hidden="true"
-                className="pointer-events-none col-start-1 row-start-1 size-5 self-center text-gray-400"
-              />
-            </form>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              <button type="button" className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
-                <span className="sr-only">View notifications</span>
-                <BellIcon aria-hidden="true" className="size-6" />
-              </button>
-
-              {/* Separator */}
-              <div aria-hidden="true" className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-900/10" />
-
-              {/* Profile dropdown */}
-              <Menu as="div" className="relative">
-                <MenuButton className="-m-1.5 flex items-center p-1.5">
-                  <span className="sr-only">Open user menu</span>
-                  <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
-                    <span className="text-sm font-medium text-white">
-                      {user?.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="hidden lg:flex lg:items-center">
-                    <span aria-hidden="true" className="ml-4 text-sm/6 font-semibold text-gray-900">
-                      {user?.username}
-                    </span>
-                    <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {user?.role}
-                    </span>
-                    <ChevronDownIcon aria-hidden="true" className="ml-2 size-5 text-gray-400" />
-                  </span>
-                </MenuButton>
-                <MenuItems
-                  transition
-                  className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 ring-1 shadow-lg ring-gray-900/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                >
-                  {userNavigation.map((item) => (
-                    <MenuItem key={item.name}>
-                      <a
-                        href={item.href}
-                        onClick={item.onClick}
-                        className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden cursor-pointer"
-                      >
-                        {item.name}
-                      </a>
-                    </MenuItem>
-                  ))}
-                </MenuItems>
-              </Menu>
-            </div>
+      <div className="sticky top-0 z-40 flex items-center gap-x-6 bg-indigo-600 px-4 py-4 shadow-xs sm:px-6 lg:hidden">
+        <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-indigo-200 lg:hidden">
+          <span className="sr-only">Open sidebar</span>
+          <Bars3Icon aria-hidden="true" className="size-6" />
+        </button>
+        <div className="flex-1 text-sm/6 font-semibold text-white">Dashboard</div>
+        <a href="#">
+          <span className="sr-only">Your profile</span>
+          <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
+            <span className="text-sm font-medium text-white">
+              {user?.username.charAt(0).toUpperCase()}
+            </span>
           </div>
-        </div>
+        </a>
+      </div>
 
-        {/* Main content */}
-        <main className="py-10">
-          <div className="px-4 sm:px-6 lg:px-8">
+      <main className="py-10 lg:pl-72">
+          <div className="px-4 sm:px-6 lg:px-8 space-y-8">
             {/* Welcome section */}
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-gray-900">
@@ -358,188 +457,28 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Stats cards */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-              <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <DocumentTextIcon className="h-6 w-6 text-indigo-600" aria-hidden="true" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Total Documents
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">245</dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Pinecone Index Information */}
+            <PineconeIndexCard 
+              indexInfo={pineconeIndexInfo}
+              isLoading={dataLoading && !dashboardData}
+            />
 
-              <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <ChartBarIcon className="h-6 w-6 text-indigo-600" aria-hidden="true" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Vector Records
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">12,847</dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Enhanced Stats cards */}
+            <StatsWithIcons 
+              stats={stats} 
+              isLoading={dataLoading}
+            />
 
-              <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <FolderIcon className="h-6 w-6 text-indigo-600" aria-hidden="true" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Active Namespaces
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">3</dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Quick Access Cards */}
+            <QuickAccessCards 
+              items={quickAccessItems}
+              isLoading={dataLoading}
+            />
 
-              <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <UserGroupIcon className="h-6 w-6 text-indigo-600" aria-hidden="true" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Active Users
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">8</dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent activity */}
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  Recent Activity
-                </h3>
-                <div className="flow-root">
-                  <ul className="-mb-8">
-                    <li>
-                      <div className="relative pb-8">
-                        <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className="bg-green-500 h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white">
-                              <DocumentTextIcon className="h-4 w-4 text-white" aria-hidden="true" />
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                New document uploaded: <span className="font-medium text-gray-900">user-manual.pdf</span>
-                              </p>
-                            </div>
-                            <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                              <time dateTime="2025-09-04">2 hours ago</time>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                    <li>
-                      <div className="relative pb-8">
-                        <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className="bg-blue-500 h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white">
-                              <ChartBarIcon className="h-4 w-4 text-white" aria-hidden="true" />
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                Vector search completed with <span className="font-medium text-gray-900">98% accuracy</span>
-                              </p>
-                            </div>
-                            <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                              <time dateTime="2025-09-04">4 hours ago</time>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                    <li>
-                      <div className="relative">
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className="bg-indigo-500 h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white">
-                              <UserGroupIcon className="h-4 w-4 text-white" aria-hidden="true" />
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                New user registered: <span className="font-medium text-gray-900">john.doe@company.com</span>
-                              </p>
-                            </div>
-                            <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                              <time dateTime="2025-09-04">6 hours ago</time>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick actions */}
-            <div className="mt-8">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <button className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                  <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">
-                    Upload Documents
-                  </span>
-                </button>
-
-                <button className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                  <FolderIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">
-                    Search Vectors
-                  </span>
-                </button>
-
-                <button className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                  <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <span className="mt-2 block text-sm font-medium text-gray-900">
-                    Manage Users
-                  </span>
-                </button>
-              </div>
-            </div>
+            {/* Recent Activity */}
+            <RecentActivity isLoading={dataLoading} />
           </div>
         </main>
-      </div>
     </div>
   );
 }
