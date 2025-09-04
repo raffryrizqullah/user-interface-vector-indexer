@@ -246,9 +246,20 @@ export default function UpsertRecordsForm() {
         }
       });
 
+      // Prepare source links as array (API expects JSON array, not object)
+      const sourceLinksArray = formState.files.map(file => 
+        formState.sourceLinks[file.name] || ''
+      );
+
       // Add metadata and source links as JSON strings (as required by API)
-      formData.append('source_links', JSON.stringify(formState.sourceLinks));
+      formData.append('source_links', JSON.stringify(sourceLinksArray));
       formData.append('custom_metadata', JSON.stringify(customMetadata));
+
+      // Debug logging
+      console.log('🔍 Form submission details:');
+      console.log('📄 Files count:', formState.files.length);
+      console.log('🔗 Source links array:', sourceLinksArray);
+      console.log('📊 Custom metadata:', customMetadata);
 
       // Submit to API using authenticated request
       const response = await AuthService.makeAuthenticatedRequest(
@@ -278,7 +289,15 @@ export default function UpsertRecordsForm() {
         const errorData = await response.json().catch(() => null);
         let errorMsg = 'Upload failed. Please try again.';
         
-        if (response.status === 403) {
+        console.log('❌ Upload failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        
+        if (response.status === 400) {
+          errorMsg = errorData?.detail || 'Bad request. Please check your file format and metadata.';
+        } else if (response.status === 403) {
           errorMsg = 'Access denied. Please check your permissions.';
         } else if (response.status === 401) {
           errorMsg = 'Authentication expired. Please login again.';
