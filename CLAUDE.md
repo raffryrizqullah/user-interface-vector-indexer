@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Technology Stack
 
-- **Framework**: Next.js 15.5.0 with App Router
+- **Framework**: Next.js 15.5.2 with App Router
 - **Runtime**: React 19.1.0
 - **Styling**: Tailwind CSS v4 with PostCSS
 - **UI Components**: Headless UI v2.2.7 and Heroicons v2.2.0
@@ -80,7 +80,7 @@ The project uses Headless UI React components with Heroicons for consistent, acc
 
 - **TypeScript**: Strict mode enabled with ES2017 target
 - **ESLint**: Configured with Next.js core web vitals and TypeScript rules
-- **Component Structure**: Follow the example in `knowledge-base/simple_card.jsx` for Tailwind UI patterns
+- **Component Structure**: Follow the example in `knowledge-base/example-code/simple_card.jsx` for Tailwind UI patterns
 - **Import Paths**: Use `@/` prefix for local imports
 
 ### UI Component Development Guidelines
@@ -102,7 +102,7 @@ The project uses Headless UI React components with Heroicons for consistent, acc
 **Knowledge Base Resources:**
 
 - Reference `knowledge-base/link-resource.md` for official documentation links
-- Use `knowledge-base/simple_card.jsx` as pattern template for Tailwind UI components
+- Use `knowledge-base/example-code/simple_card.jsx` as pattern template for Tailwind UI components
 - Follow Tailwind UI implementation strategies: start monolithic, then extract reusable parts
 
 ## Safety Features
