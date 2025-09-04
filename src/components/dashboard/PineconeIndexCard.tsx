@@ -70,13 +70,20 @@ export default function PineconeIndexCard({
   return (
     <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
       <div className="px-4 py-5 sm:p-6">
-        <div className="flex items-center mb-6">
-          <div className="rounded-md bg-indigo-500 p-2 mr-3">
-            <ServerIcon className="h-6 w-6 text-white" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <div className="rounded-md bg-indigo-500 p-2 mr-3">
+              <ServerIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Pinecone Index Configuration</h3>
+              <p className="text-sm text-gray-500">Current vector database settings and status</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Pinecone Index Configuration</h3>
-            <p className="text-sm text-gray-500">Current vector database settings and status</p>
+          
+          <div className="text-right">
+            <div className="text-sm text-gray-500">Record Count</div>
+            <div className="text-2xl font-bold text-indigo-600">{indexInfo.recordCount}</div>
           </div>
         </div>
 
@@ -145,11 +152,6 @@ export default function PineconeIndexCard({
           </div>
         </div>
 
-        {/* Record Count Badge */}
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-          <div className="text-sm text-gray-500 mb-2">Record Count</div>
-          <div className="text-3xl font-bold text-indigo-600">{indexInfo.recordCount}</div>
-        </div>
       </div>
     </div>
   );
