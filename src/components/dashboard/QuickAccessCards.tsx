@@ -40,8 +40,8 @@ export interface QuickAccessItem {
     value: string;
   };
   actions: {
-    primary: { label: string; href: string };
-    secondary: { label: string; href: string };
+    primary: { label: string; href?: string; onClick?: () => void };
+    secondary: { label: string; href?: string; onClick?: () => void };
   };
 }
 
@@ -196,20 +196,38 @@ export default function QuickAccessCards({ items = defaultItems, isLoading = fal
                   className="absolute right-0 z-10 mt-0.5 w-32 origin-top-right rounded-md bg-white py-2 ring-1 shadow-lg ring-gray-900/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                 >
                   <MenuItem>
-                    <a
-                      href={item.actions.primary.href}
-                      className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
-                    >
-                      {item.actions.primary.label}
-                    </a>
+                    {item.actions.primary.onClick ? (
+                      <button
+                        onClick={item.actions.primary.onClick}
+                        className="block w-full text-left px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                      >
+                        {item.actions.primary.label}
+                      </button>
+                    ) : (
+                      <a
+                        href={item.actions.primary.href}
+                        className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                      >
+                        {item.actions.primary.label}
+                      </a>
+                    )}
                   </MenuItem>
                   <MenuItem>
-                    <a
-                      href={item.actions.secondary.href}
-                      className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
-                    >
-                      {item.actions.secondary.label}
-                    </a>
+                    {item.actions.secondary.onClick ? (
+                      <button
+                        onClick={item.actions.secondary.onClick}
+                        className="block w-full text-left px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                      >
+                        {item.actions.secondary.label}
+                      </button>
+                    ) : (
+                      <a
+                        href={item.actions.secondary.href}
+                        className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                      >
+                        {item.actions.secondary.label}
+                      </a>
+                    )}
                   </MenuItem>
                 </MenuItems>
               </Menu>
@@ -248,18 +266,36 @@ export default function QuickAccessCards({ items = defaultItems, isLoading = fal
             
             {/* Action Buttons */}
             <div className="bg-gray-50 px-6 py-4 flex space-x-3">
-              <a
-                href={item.actions.primary.href}
-                className="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-              >
-                {item.actions.primary.label}
-              </a>
-              <a
-                href={item.actions.secondary.href}
-                className="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-              >
-                {item.actions.secondary.label}
-              </a>
+              {item.actions.primary.onClick ? (
+                <button
+                  onClick={item.actions.primary.onClick}
+                  className="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  {item.actions.primary.label}
+                </button>
+              ) : (
+                <a
+                  href={item.actions.primary.href}
+                  className="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  {item.actions.primary.label}
+                </a>
+              )}
+              {item.actions.secondary.onClick ? (
+                <button
+                  onClick={item.actions.secondary.onClick}
+                  className="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  {item.actions.secondary.label}
+                </button>
+              ) : (
+                <a
+                  href={item.actions.secondary.href}
+                  className="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  {item.actions.secondary.label}
+                </a>
+              )}
             </div>
           </li>
         ))}

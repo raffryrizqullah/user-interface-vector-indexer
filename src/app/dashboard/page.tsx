@@ -8,6 +8,7 @@ import PineconeIndexCard from '@/components/dashboard/PineconeIndexCard';
 import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons';
 import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
 import RecentActivity from '@/components/dashboard/RecentActivity';
+import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
 import {
   Dialog,
   DialogBackdrop,
@@ -30,13 +31,7 @@ import {
   HeartIcon,
 } from '@heroicons/react/24/outline';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, current: true },
-  { name: 'Documents', href: '#', icon: DocumentDuplicateIcon, current: false },
-  { name: 'Vector Search', href: '#', icon: FolderIcon, current: false },
-  { name: 'Analytics', href: '#', icon: ChartPieIcon, current: false },
-  { name: 'Users', href: '#', icon: UsersIcon, current: false },
-];
+// Navigation items will be defined inside the component to access setCurrentView
 
 const namespaces = [
   { id: 1, name: 'Default', href: '#', initial: 'D', current: false },
@@ -57,6 +52,46 @@ export default function DashboardPage() {
   const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records'>('dashboard');
+
+  // Navigation items with onClick handlers
+  const navigation = [
+    { 
+      name: 'Dashboard', 
+      view: 'dashboard' as const, 
+      icon: HomeIcon, 
+      current: currentView === 'dashboard',
+      onClick: () => setCurrentView('dashboard')
+    },
+    { 
+      name: 'Documents', 
+      view: 'upsert-records' as const, 
+      icon: DocumentDuplicateIcon, 
+      current: currentView === 'upsert-records',
+      onClick: () => setCurrentView('upsert-records')
+    },
+    { 
+      name: 'Vector Search', 
+      view: null, 
+      icon: FolderIcon, 
+      current: false,
+      onClick: () => console.log('Vector Search - Coming soon')
+    },
+    { 
+      name: 'Analytics', 
+      view: null, 
+      icon: ChartPieIcon, 
+      current: false,
+      onClick: () => console.log('Analytics - Coming soon')
+    },
+    { 
+      name: 'Users', 
+      view: null, 
+      icon: UsersIcon, 
+      current: false,
+      onClick: () => console.log('Users - Coming soon')
+    },
+  ];
 
   useEffect(() => {
     // Check authentication status
@@ -202,7 +237,7 @@ export default function DashboardPage() {
         value: `${stats.find(s => s.name === 'Total Documents')?.stat || '0'} total`
       },
       actions: {
-        primary: { label: 'Upload Files', href: '/documents/upload' },
+        primary: { label: 'Upload Files', onClick: () => setCurrentView('upsert-records') },
         secondary: { label: 'View History', href: '/documents/history' }
       }
     },
@@ -303,13 +338,13 @@ export default function DashboardPage() {
                     <ul role="list" className="-mx-2 space-y-1">
                       {navigation.map((item) => (
                         <li key={item.name}>
-                          <a
-                            href={item.href}
+                          <button
+                            onClick={item.onClick}
                             className={classNames(
                               item.current
                                 ? 'bg-indigo-700 text-white'
                                 : 'text-indigo-200 hover:bg-indigo-700 hover:text-white',
-                              'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold',
+                              'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold w-full text-left',
                             )}
                           >
                             <item.icon
@@ -320,7 +355,7 @@ export default function DashboardPage() {
                               )}
                             />
                             {item.name}
-                          </a>
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -387,13 +422,13 @@ export default function DashboardPage() {
                 <ul role="list" className="-mx-2 space-y-1">
                   {navigation.map((item) => (
                     <li key={item.name}>
-                      <a
-                        href={item.href}
+                      <button
+                        onClick={item.onClick}
                         className={classNames(
                           item.current
                             ? 'bg-indigo-700 text-white'
                             : 'text-indigo-200 hover:bg-indigo-700 hover:text-white',
-                          'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold',
+                          'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold w-full text-left',
                         )}
                       >
                         <item.icon
@@ -404,7 +439,7 @@ export default function DashboardPage() {
                           )}
                         />
                         {item.name}
-                      </a>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -457,7 +492,9 @@ export default function DashboardPage() {
           <span className="sr-only">Open sidebar</span>
           <Bars3Icon aria-hidden="true" className="size-6" />
         </button>
-        <div className="flex-1 text-sm/6 font-semibold text-white">Dashboard</div>
+        <div className="flex-1 text-sm/6 font-semibold text-white">
+          {currentView === 'dashboard' ? 'Dashboard' : 'Upload Documents'}
+        </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
           <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
@@ -469,39 +506,80 @@ export default function DashboardPage() {
       </div>
 
       <main className="py-10 lg:pl-72">
-          <div className="px-4 sm:px-6 lg:px-8 space-y-8">
-            {/* Welcome section */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {user?.username}!
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Here&apos;s what&apos;s happening with your vector database today.
-              </p>
-            </div>
+        <div className="px-4 sm:px-6 lg:px-8 space-y-8">
+          {currentView === 'dashboard' && (
+            <>
+              {/* Welcome section */}
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Welcome back, {user?.username}!
+                </h1>
+                <p className="mt-2 text-gray-600">
+                  Here&apos;s what&apos;s happening with your vector database today.
+                </p>
+              </div>
 
-            {/* Pinecone Index Information */}
-            <PineconeIndexCard 
-              indexInfo={pineconeIndexInfo}
-              isLoading={dataLoading && !dashboardData}
-            />
+              {/* Pinecone Index Information */}
+              <PineconeIndexCard 
+                indexInfo={pineconeIndexInfo}
+                isLoading={dataLoading && !dashboardData}
+              />
 
-            {/* Enhanced Stats cards */}
-            <StatsWithIcons 
-              stats={stats} 
-              isLoading={dataLoading}
-            />
+              {/* Enhanced Stats cards */}
+              <StatsWithIcons 
+                stats={stats} 
+                isLoading={dataLoading}
+              />
 
-            {/* Quick Access Cards */}
-            <QuickAccessCards 
-              items={quickAccessItems}
-              isLoading={dataLoading}
-            />
+              {/* Quick Access Cards */}
+              <QuickAccessCards 
+                items={quickAccessItems}
+                isLoading={dataLoading}
+              />
 
-            {/* Recent Activity */}
-            <RecentActivity isLoading={dataLoading} />
-          </div>
-        </main>
+              {/* Recent Activity */}
+              <RecentActivity isLoading={dataLoading} />
+            </>
+          )}
+
+          {currentView === 'upsert-records' && (
+            <>
+              {/* Breadcrumb navigation */}
+              <nav className="flex mb-4" aria-label="Breadcrumb">
+                <ol className="flex items-center space-x-2 text-sm">
+                  <li>
+                    <button 
+                      onClick={() => setCurrentView('dashboard')}
+                      className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    >
+                      Dashboard
+                    </button>
+                  </li>
+                  <li className="text-gray-300">/</li>
+                  <li className="text-gray-900 font-medium">Upload Documents</li>
+                </ol>
+              </nav>
+
+              {/* Page header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold leading-tight text-gray-900">
+                  Upsert Records
+                </h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Upload PDF documents and create vector embeddings with custom metadata
+                </p>
+              </div>
+
+              {/* Upsert form */}
+              <div className="bg-white shadow-sm rounded-lg">
+                <div className="px-6 py-8">
+                  <UpsertRecordsForm />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
