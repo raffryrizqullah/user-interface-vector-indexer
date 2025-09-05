@@ -11,6 +11,7 @@ import RecentActivity from '@/components/dashboard/RecentActivity';
 import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
 import VectorSearchForm, { SearchResults } from '@/components/forms/VectorSearchForm';
 import VectorListDisplay from '@/components/search/VectorListDisplay';
+import HealthCheckDisplay from '@/components/health/HealthCheckDisplay';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 import PageHeader from '@/components/ui/PageHeader';
 import ContentContainer from '@/components/ui/ContentContainer';
@@ -22,7 +23,6 @@ import {
 } from '@headlessui/react';
 import {
   Bars3Icon,
-  ChartPieIcon,
   DocumentDuplicateIcon,
   FolderIcon,
   HomeIcon,
@@ -57,7 +57,7 @@ export default function DashboardPage() {
   const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check'>('dashboard');
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -80,6 +80,12 @@ export default function DashboardPage() {
           { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
           { name: 'Search', current: false, onClick: () => setCurrentView('vector-search') },
           { name: 'Vector Search', current: true }
+        ];
+      case 'health-check':
+        return [
+          { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
+          { name: 'System', current: false, onClick: () => setCurrentView('health-check') },
+          { name: 'Health Check', current: true }
         ];
       default:
         return [];
@@ -110,11 +116,11 @@ export default function DashboardPage() {
       onClick: () => setCurrentView('vector-search')
     },
     { 
-      name: 'Analytics', 
-      view: null, 
-      icon: ChartPieIcon, 
-      current: false,
-      onClick: () => console.log('Analytics - Coming soon')
+      name: 'Health Check', 
+      view: 'health-check' as const, 
+      icon: HeartIcon, 
+      current: currentView === 'health-check',
+      onClick: () => setCurrentView('health-check')
     },
     { 
       name: 'Users', 
@@ -527,7 +533,8 @@ export default function DashboardPage() {
         <div className="flex-1 text-sm/6 font-semibold text-white">
           {currentView === 'dashboard' ? 'Dashboard' : 
            currentView === 'upsert-records' ? 'Upload Documents' : 
-           'Vector Search'}
+           currentView === 'vector-search' ? 'Vector Search' :
+           'Health Check'}
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
@@ -637,6 +644,23 @@ export default function DashboardPage() {
                     }
                   }}
                 />
+              </ContentContainer>
+            </>
+          )}
+
+          {currentView === 'health-check' && (
+            <>
+              {/* Page Header */}
+              <PageHeader
+                title="Health Check"
+                description="Monitor system health and Pinecone database connectivity"
+                icon={<HeartIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
+
+              {/* Health Check Dashboard */}
+              <ContentContainer>
+                <HealthCheckDisplay />
               </ContentContainer>
             </>
           )}
