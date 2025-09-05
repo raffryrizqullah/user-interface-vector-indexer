@@ -17,6 +17,7 @@ import UserDetailsModal from '@/components/users/UserDetailsModal';
 import UserEditForm from '@/components/users/UserEditForm';
 import UserAddForm from '@/components/users/UserAddForm';
 import ActivityDashboard from '@/components/activity/ActivityDashboard';
+import SettingsLayout from '@/components/settings/SettingsLayout';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 import PageHeader from '@/components/ui/PageHeader';
 import ContentContainer from '@/components/ui/ContentContainer';
@@ -40,6 +41,7 @@ import {
   DocumentPlusIcon,
   HeartIcon,
   ClipboardDocumentListIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 // Navigation items will be defined inside the component to access setCurrentView
@@ -58,7 +60,7 @@ export default function DashboardPage() {
   const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check' | 'users' | 'activity-logs'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check' | 'users' | 'activity-logs' | 'settings'>('dashboard');
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -110,6 +112,11 @@ export default function DashboardPage() {
           { name: 'Admin', current: false, onClick: () => setCurrentView('activity-logs') },
           { name: 'Activity Logs', current: true }
         ];
+      case 'settings':
+        return [
+          { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
+          { name: 'Settings', current: true }
+        ];
       default:
         return [];
     }
@@ -158,6 +165,13 @@ export default function DashboardPage() {
       icon: ClipboardDocumentListIcon, 
       current: currentView === 'activity-logs',
       onClick: () => setCurrentView('activity-logs')
+    },
+    { 
+      name: 'Settings', 
+      view: 'settings' as const, 
+      icon: Cog6ToothIcon, 
+      current: currentView === 'settings',
+      onClick: () => setCurrentView('settings')
     },
   ];
 
@@ -572,7 +586,8 @@ export default function DashboardPage() {
            currentView === 'vector-search' ? 'Vector Search' :
            currentView === 'health-check' ? 'Health Check' :
            currentView === 'users' ? 'User Management' :
-           'Activity Logs'}
+           currentView === 'activity-logs' ? 'Activity Logs' :
+           'Settings'}
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
@@ -781,6 +796,21 @@ export default function DashboardPage() {
               <ContentContainer>
                 <ActivityDashboard />
               </ContentContainer>
+            </>
+          )}
+
+          {currentView === 'settings' && (
+            <>
+              {/* Page Header */}
+              <PageHeader
+                title="Settings"
+                description="Manage your account settings, preferences, and privacy controls"
+                icon={<Cog6ToothIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
+
+              {/* Settings Layout */}
+              <SettingsLayout />
             </>
           )}
         </ContentContainer>
