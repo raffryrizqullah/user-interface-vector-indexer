@@ -7,7 +7,7 @@ import { ApiService, User } from '@/lib/api';
 import PineconeIndexCard from '@/components/dashboard/PineconeIndexCard';
 import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons';
 import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
-import RecentActivity from '@/components/dashboard/RecentActivity';
+import RecentActivity, { ActivityItem } from '@/components/dashboard/RecentActivity';
 import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
 import VectorSearchForm, { SearchResults } from '@/components/forms/VectorSearchForm';
 import VectorListDisplay from '@/components/search/VectorListDisplay';
@@ -16,6 +16,7 @@ import UserListDisplay from '@/components/users/UserListDisplay';
 import UserDetailsModal from '@/components/users/UserDetailsModal';
 import UserEditForm from '@/components/users/UserEditForm';
 import UserAddForm from '@/components/users/UserAddForm';
+import ActivityDashboard from '@/components/activity/ActivityDashboard';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 import PageHeader from '@/components/ui/PageHeader';
 import ContentContainer from '@/components/ui/ContentContainer';
@@ -38,6 +39,7 @@ import {
   CubeIcon,
   DocumentPlusIcon,
   HeartIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 // Navigation items will be defined inside the component to access setCurrentView
@@ -56,7 +58,7 @@ export default function DashboardPage() {
   const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check' | 'users'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check' | 'users' | 'activity-logs'>('dashboard');
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -102,6 +104,12 @@ export default function DashboardPage() {
           { name: 'Admin', current: false, onClick: () => setCurrentView('users') },
           { name: 'User Management', current: true }
         ];
+      case 'activity-logs':
+        return [
+          { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
+          { name: 'Admin', current: false, onClick: () => setCurrentView('activity-logs') },
+          { name: 'Activity Logs', current: true }
+        ];
       default:
         return [];
     }
@@ -143,6 +151,13 @@ export default function DashboardPage() {
       icon: UsersIcon, 
       current: currentView === 'users',
       onClick: () => setCurrentView('users')
+    },
+    { 
+      name: 'Activity Logs', 
+      view: 'activity-logs' as const, 
+      icon: ClipboardDocumentListIcon, 
+      current: currentView === 'activity-logs',
+      onClick: () => setCurrentView('activity-logs')
     },
   ];
 
@@ -341,7 +356,7 @@ export default function DashboardPage() {
       },
       actions: {
         primary: { label: 'Upload Files', onClick: () => setCurrentView('upsert-records') },
-        secondary: { label: 'View History', href: '/documents/history' }
+        secondary: { label: 'View Documents', onClick: () => setCurrentView('upsert-records') }
       }
     },
     {
@@ -366,7 +381,7 @@ export default function DashboardPage() {
       },
       actions: {
         primary: { label: 'New Search', onClick: () => setCurrentView('vector-search') },
-        secondary: { label: 'Recent Searches', href: '/search/history' }
+        secondary: { label: 'Search Page', onClick: () => setCurrentView('vector-search') }
       }
     },
     {
@@ -391,10 +406,12 @@ export default function DashboardPage() {
       },
       actions: {
         primary: { label: 'Run Health Check', href: '#', onClick: fetchDashboardData },
-        secondary: { label: 'View Logs', href: '/health/logs' }
+        secondary: { label: 'Health Details', onClick: () => setCurrentView('health-check') }
       }
     }
   ];
+
+  // Legacy activity data removed - now using real API data in RecentActivity component
 
   if (isLoading) {
     return (
@@ -554,7 +571,8 @@ export default function DashboardPage() {
            currentView === 'upsert-records' ? 'Upload Documents' : 
            currentView === 'vector-search' ? 'Vector Search' :
            currentView === 'health-check' ? 'Health Check' :
-           'User Management'}
+           currentView === 'users' ? 'User Management' :
+           'Activity Logs'}
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
@@ -604,7 +622,13 @@ export default function DashboardPage() {
                 />
 
                 {/* Recent Activity */}
-                <RecentActivity isLoading={dataLoading} />
+                <RecentActivity 
+                  useRealData={true}
+                  isLoading={dataLoading} 
+                  onNavigate={setCurrentView}
+                  refreshInterval={30000}
+                  maxItems={5}
+                />
               </div>
             </>
           )}
@@ -740,6 +764,23 @@ export default function DashboardPage() {
                 onClose={() => setShowUserAdd(false)}
                 onSuccess={handleUserCreateSuccess}
               />
+            </>
+          )}
+
+          {currentView === 'activity-logs' && (
+            <>
+              {/* Page Header */}
+              <PageHeader
+                title="Activity Logs"
+                description="Monitor system activities and user actions across the platform"
+                icon={<ClipboardDocumentListIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
+
+              {/* Activity Dashboard */}
+              <ContentContainer>
+                <ActivityDashboard />
+              </ContentContainer>
             </>
           )}
         </ContentContainer>
