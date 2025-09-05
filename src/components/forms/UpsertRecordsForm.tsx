@@ -352,9 +352,8 @@ export default function UpsertRecordsForm() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-8 lg:space-y-12">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="space-y-8 lg:space-y-12">
           {/* Header */}
           <div className="border-b border-gray-900/10 pb-8 lg:pb-12">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -383,7 +382,7 @@ export default function UpsertRecordsForm() {
           </div>
 
           {/* File Upload Section */}
-          <div className="border-b border-gray-900/10 pb-12">
+          <div className="border-b border-gray-900/10 pb-12 w-full">
             <h3 className="text-base/7 font-semibold text-gray-900 mb-4">Upload PDF Files</h3>
             
             <div className="mt-10 space-y-8 sm:space-y-0 sm:divide-y sm:divide-gray-900/10">
@@ -394,7 +393,7 @@ export default function UpsertRecordsForm() {
                 <div className="mt-2 sm:col-span-2 sm:mt-0">
                   <div 
                     className={classNames(
-                      "flex max-w-2xl justify-center rounded-lg border border-dashed px-6 py-10 transition-all duration-200 ease-in-out",
+                      "flex w-full justify-center rounded-lg border border-dashed px-6 py-10 transition-all duration-200 ease-in-out",
                       dragActive 
                         ? "border-indigo-600 bg-indigo-50 border-2 ring-2 ring-indigo-200 ring-offset-2 transform scale-105" 
                         : "border-gray-900/25 hover:border-gray-400"
@@ -489,7 +488,7 @@ export default function UpsertRecordsForm() {
 
           {/* Source Links Section */}
           {formState.files.length > 0 && (
-            <div className="border-b border-gray-900/10 pb-12">
+            <div className="border-b border-gray-900/10 pb-12 w-full">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="flex items-center justify-center size-8 rounded-lg bg-indigo-100">
                   <GlobeAltIcon className="size-4 text-indigo-600" />
@@ -500,7 +499,7 @@ export default function UpsertRecordsForm() {
                 </div>
               </div>
               
-              <div className="grid gap-4 sm:gap-6">
+              <div className="grid gap-4 sm:gap-6 w-full">
                 {formState.files
                   .sort((a, b) => a.uploadIndex - b.uploadIndex) // Show source links in upload order
                   .map((file, index) => {
@@ -642,7 +641,7 @@ export default function UpsertRecordsForm() {
           )}
 
           {/* Custom Metadata Section */}
-          <div className="border-b border-gray-900/10 pb-12">
+          <div className="border-b border-gray-900/10 pb-12 w-full">
             <div className="flex items-center space-x-3 mb-6">
               <div className="flex items-center justify-center size-8 rounded-lg bg-emerald-100">
                 <Cog6ToothIcon className="size-4 text-emerald-600" />
@@ -653,7 +652,7 @@ export default function UpsertRecordsForm() {
               </div>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-6 w-full">
               {/* Sensitivity Settings - Enhanced Card */}
               <Disclosure defaultOpen>
                 {({ open }) => (
@@ -944,8 +943,7 @@ export default function UpsertRecordsForm() {
               </button>
             </div>
           </div>
-        </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }

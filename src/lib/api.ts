@@ -54,6 +54,61 @@ export interface User {
   last_login: string | null;
 }
 
+export interface VectorRecord {
+  id: string;
+  values?: number[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface VectorFetchResponse {
+  vectors: Record<string, VectorRecord>;
+  namespace: string;
+  usage?: {
+    read_units: number;
+  };
+}
+
+export interface PrefixSearchResponse {
+  matches: VectorRecord[];
+  namespace: string;
+  usage?: {
+    read_units: number;
+  };
+}
+
+export interface VectorListResponse {
+  success: boolean;
+  namespace: string;
+  prefix?: string | null;
+  vector_ids: string[];
+  count: number;
+  pagination_method: string;
+  pagination?: Record<string, unknown> | null;
+  usage?: Record<string, unknown>;
+  message?: string | null;
+  error?: string | null;
+}
+
+export interface VectorDeleteResponse {
+  success: boolean;
+  message: string;
+  deleted_count: number;
+  deleted_ids?: string[];
+  errors?: string[];
+}
+
+export interface DeletionPreviewResponse {
+  preview: {
+    count: number;
+    ids: string[];
+    affected_documents?: string[];
+  };
+  estimated_cost?: {
+    read_units: number;
+    write_units: number;
+  };
+}
+
 export class ApiService {
   // Health endpoints
   static async getBasicHealth(): Promise<HealthResponse> {
@@ -99,6 +154,125 @@ export class ApiService {
     );
     if (!response.ok) {
       throw new Error('Failed to fetch users');
+    }
+    return response.json();
+  }
+
+  // Vector search methods
+  static async searchVectorsByPrefix(
+    prefix: string,
+    namespace: string = 'default',
+    limit: number = 100,
+    fetchMetadata: boolean = true
+  ): Promise<PrefixSearchResponse> {
+    const params = new URLSearchParams({
+      prefix,
+      namespace,
+      limit: limit.toString(),
+      fetch_metadata: fetchMetadata.toString(),
+    });
+
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/records/search?${params}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to search vectors by prefix');
+    }
+    return response.json();
+  }
+
+  static async fetchVectorRecords(
+    ids: string[],
+    namespace: string = 'default',
+    includeMetadata: boolean = true,
+    includeValues: boolean = false
+  ): Promise<VectorFetchResponse> {
+    const params = new URLSearchParams({
+      ids: ids.join(','),
+      namespace,
+      include_metadata: includeMetadata.toString(),
+      include_values: includeValues.toString(),
+    });
+
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/records/fetch?${params}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to fetch vector records');
+    }
+    return response.json();
+  }
+
+  static async listVectorRecordsWithPagination(
+    namespace: string = 'default',
+    prefix?: string,
+    limit: number = 100,
+    paginationToken?: string,
+    autoPagination: boolean = false
+  ): Promise<VectorListResponse> {
+    const params = new URLSearchParams({
+      namespace,
+      limit: limit.toString(),
+      auto_pagination: autoPagination.toString(),
+    });
+
+    if (prefix) params.append('prefix', prefix);
+    if (paginationToken) params.append('pagination_token', paginationToken);
+
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/records?${params}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to list vector records');
+    }
+    return response.json();
+  }
+
+  // Delete operations
+  static async deleteVectorsByIds(
+    ids: string[],
+    namespace: string = 'default',
+    dryRun: boolean = false,
+    confirm: boolean = false
+  ): Promise<VectorDeleteResponse> {
+    const params = new URLSearchParams({
+      ids: ids.join(','),
+      namespace,
+      dry_run: dryRun.toString(),
+      confirm: confirm.toString(),
+    });
+
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/records/by-ids?${params}`,
+      { method: 'DELETE' }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to delete vector records');
+    }
+    return response.json();
+  }
+
+  static async previewDeletion(
+    ids?: string[],
+    namespace: string = 'default',
+    metadataFilter?: string,
+    prefix?: string,
+    documentId?: string
+  ): Promise<DeletionPreviewResponse> {
+    const params = new URLSearchParams({
+      namespace,
+    });
+
+    if (ids && ids.length > 0) params.append('ids', ids.join(','));
+    if (metadataFilter) params.append('metadata_filter', metadataFilter);
+    if (prefix) params.append('prefix', prefix);
+    if (documentId) params.append('document_id', documentId);
+
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/records/deletion-preview?${params}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to get deletion preview');
     }
     return response.json();
   }

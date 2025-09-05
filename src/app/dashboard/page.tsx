@@ -9,6 +9,8 @@ import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons'
 import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
+import VectorSearchForm, { SearchResults } from '@/components/forms/VectorSearchForm';
+import VectorListDisplay from '@/components/search/VectorListDisplay';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 import PageHeader from '@/components/ui/PageHeader';
 import ContentContainer from '@/components/ui/ContentContainer';
@@ -55,7 +57,10 @@ export default function DashboardPage() {
   const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search'>('dashboard');
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Breadcrumb configuration
   const getBreadcrumbs = (): BreadcrumbItem[] => {
@@ -69,6 +74,12 @@ export default function DashboardPage() {
           { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
           { name: 'Documents', current: false, onClick: () => setCurrentView('upsert-records') },
           { name: 'Upload', current: true }
+        ];
+      case 'vector-search':
+        return [
+          { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
+          { name: 'Search', current: false, onClick: () => setCurrentView('vector-search') },
+          { name: 'Vector Search', current: true }
         ];
       default:
         return [];
@@ -93,10 +104,10 @@ export default function DashboardPage() {
     },
     { 
       name: 'Vector Search', 
-      view: null, 
-      icon: FolderIcon, 
-      current: false,
-      onClick: () => console.log('Vector Search - Coming soon')
+      view: 'vector-search' as const, 
+      icon: MagnifyingGlassIcon, 
+      current: currentView === 'vector-search',
+      onClick: () => setCurrentView('vector-search')
     },
     { 
       name: 'Analytics', 
@@ -283,7 +294,7 @@ export default function DashboardPage() {
         value: `${stats.find(s => s.name === 'Vector Records')?.stat || '0'}`
       },
       actions: {
-        primary: { label: 'New Search', href: '/search' },
+        primary: { label: 'New Search', onClick: () => setCurrentView('vector-search') },
         secondary: { label: 'Recent Searches', href: '/search/history' }
       }
     },
@@ -514,7 +525,9 @@ export default function DashboardPage() {
           <Bars3Icon aria-hidden="true" className="size-6" />
         </button>
         <div className="flex-1 text-sm/6 font-semibold text-white">
-          {currentView === 'dashboard' ? 'Dashboard' : 'Upload Documents'}
+          {currentView === 'dashboard' ? 'Dashboard' : 
+           currentView === 'upsert-records' ? 'Upload Documents' : 
+           'Vector Search'}
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
@@ -580,10 +593,50 @@ export default function DashboardPage() {
               />
 
               {/* Upsert form */}
-              <ContentContainer variant="card" className="p-0">
+              <ContentContainer variant="card">
                 <div className="p-6 sm:p-8">
                   <UpsertRecordsForm />
                 </div>
+              </ContentContainer>
+            </>
+          )}
+
+          {currentView === 'vector-search' && (
+            <>
+              {/* Page Header */}
+              <PageHeader
+                title="Vector Search"
+                description="Search and explore your vector database with advanced filtering options"
+                icon={<MagnifyingGlassIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
+
+              {/* Search Form */}
+              <ContentContainer variant="card" className="mb-8">
+                <div className="p-6 sm:p-8">
+                  <VectorSearchForm
+                    onSearchResults={setSearchResults}
+                    onLoading={setSearchLoading}
+                    onError={setSearchError}
+                  />
+                </div>
+              </ContentContainer>
+
+              {/* Search Results */}
+              <ContentContainer>
+                <VectorListDisplay
+                  results={searchResults}
+                  loading={searchLoading}
+                  error={searchError}
+                  onRefresh={() => {
+                    // Re-execute the last search
+                    if (searchResults) {
+                      setSearchLoading(true);
+                      // Trigger the search form to re-execute the search
+                      // This will be handled by the form component
+                    }
+                  }}
+                />
               </ContentContainer>
             </>
           )}
