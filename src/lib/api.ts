@@ -54,6 +54,33 @@ export interface User {
   last_login: string | null;
 }
 
+export interface UserUpdateData {
+  username?: string;
+  email?: string;
+  role?: 'admin' | 'super_admin';
+  is_active?: boolean;
+  is_verified?: boolean;
+}
+
+export interface UserCreateData {
+  username: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'super_admin';
+  is_active?: boolean;
+  is_verified?: boolean;
+}
+
+export interface UserSession {
+  id: string;
+  user_id: string;
+  created_at: string;
+  expires_at: string;
+  last_activity: string;
+  ip_address?: string;
+  user_agent?: string;
+}
+
 export interface VectorRecord {
   id: string;
   values?: number[];
@@ -148,14 +175,162 @@ export class ApiService {
     return response.json();
   }
 
-  static async getUsers(): Promise<User[]> {
-    const response = await AuthService.makeAuthenticatedRequest(
-      `${API_BASE_URL}/users/`
-    );
+  static async getUsers(filters: {
+    skip?: number;
+    limit?: number;
+    role?: 'admin' | 'super_admin';
+    is_active?: boolean;
+  } = {}): Promise<User[]> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) {
+        params.append(key, value.toString());
+      }
+    });
+
+    const url = params.toString() ? `${API_BASE_URL}/users/?${params}` : `${API_BASE_URL}/users/`;
+    const response = await AuthService.makeAuthenticatedRequest(url);
     if (!response.ok) {
       throw new Error('Failed to fetch users');
     }
     return response.json();
+  }
+
+  static async getUserById(id: string): Promise<User> {
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/users/${id}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to fetch user');
+    }
+    return response.json();
+  }
+
+  static async updateUser(id: string, data: UserUpdateData): Promise<User> {
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/users/${id}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to update user');
+    }
+    return response.json();
+  }
+
+  static async deleteUser(id: string): Promise<void> {
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/users/${id}`,
+      { method: 'DELETE' }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to delete user');
+    }
+  }
+
+  static async getUserSessions(id: string): Promise<UserSession[]> {
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/users/${id}/sessions`
+    );
+    
+    if (!response.ok) {
+      // Handle specific error cases
+      if (response.status === 404) {
+        console.warn(`User ${id} not found or no sessions endpoint available`);
+        return []; // Return empty array for missing user/endpoint
+      }
+      throw new Error(`Failed to fetch user sessions: ${response.status} ${response.statusText}`);
+    }
+    
+    try {
+      const data = await response.json();
+      
+      // Validate and normalize the response format
+      if (Array.isArray(data)) {
+        // Direct array response
+        return data;
+      } else if (data && typeof data === 'object') {
+        // Check for common response wrapper patterns
+        if (Array.isArray(data.sessions)) {
+          return data.sessions;
+        } else if (Array.isArray(data.data)) {
+          return data.data;
+        } else if (Array.isArray(data.results)) {
+          return data.results;
+        } else {
+          console.warn('User sessions API returned unexpected format:', data);
+          return []; // Return empty array for unexpected format
+        }
+      }
+      
+      // Fallback for null, undefined, or other unexpected responses
+      console.warn('User sessions API returned non-object response:', data);
+      return [];
+    } catch (jsonError) {
+      console.error('Failed to parse user sessions response as JSON:', jsonError);
+      throw new Error('Invalid response format from user sessions endpoint');
+    }
+  }
+
+  static async createUser(data: UserCreateData): Promise<User> {
+    const response = await AuthService.makeAuthenticatedRequest(
+      `${API_BASE_URL}/auth/register`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Only send fields that match UserRegister schema
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          // Note: is_active and is_verified are not in UserRegister schema
+        }),
+      }
+    );
+    
+    if (!response.ok) {
+      // Handle specific error cases based on API documentation
+      if (response.status === 403) {
+        throw new Error('Only Super Admin can create users');
+      } else if (response.status === 409) {
+        throw new Error('Username or email already exists');
+      } else if (response.status === 422) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessages = errorData.detail || 'Invalid user data provided';
+        if (Array.isArray(errorMessages)) {
+          const messages = errorMessages.map(e => e.msg || e.message || e).join(', ');
+          throw new Error(messages);
+        }
+        throw new Error(errorMessages);
+      }
+      throw new Error(`Failed to create user: ${response.status} ${response.statusText}`);
+    }
+    
+    try {
+      const result = await response.json();
+      console.log('Register response:', result); // Debug log
+      
+      // Handle AuthResponse format: { success, message, user, tokens }
+      if (result.success && result.user) {
+        return result.user;
+      } else if (result.user) {
+        return result.user;
+      } else {
+        console.error('Unexpected register response format:', result);
+        throw new Error(`Registration failed: ${result.message || 'Unknown error'}`);
+      }
+    } catch (parseError) {
+      console.error('Failed to parse register response:', parseError);
+      throw new Error('Invalid response format from register endpoint');
+    }
   }
 
   // Vector search methods

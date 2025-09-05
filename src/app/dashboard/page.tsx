@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthService, User } from '@/lib/auth';
-import { ApiService } from '@/lib/api';
+import { AuthService, User as AuthUser } from '@/lib/auth';
+import { ApiService, User } from '@/lib/api';
 import PineconeIndexCard from '@/components/dashboard/PineconeIndexCard';
 import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons';
 import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
@@ -12,6 +12,10 @@ import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
 import VectorSearchForm, { SearchResults } from '@/components/forms/VectorSearchForm';
 import VectorListDisplay from '@/components/search/VectorListDisplay';
 import HealthCheckDisplay from '@/components/health/HealthCheckDisplay';
+import UserListDisplay from '@/components/users/UserListDisplay';
+import UserDetailsModal from '@/components/users/UserDetailsModal';
+import UserEditForm from '@/components/users/UserEditForm';
+import UserAddForm from '@/components/users/UserAddForm';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 import PageHeader from '@/components/ui/PageHeader';
 import ContentContainer from '@/components/ui/ContentContainer';
@@ -50,17 +54,27 @@ function classNames(...classes: string[]) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check' | 'users'>('dashboard');
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  
+  // Users management state
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+  const [showUserEdit, setShowUserEdit] = useState(false);
+  const [showUserAdd, setShowUserAdd] = useState(false);
 
   // Breadcrumb configuration
   const getBreadcrumbs = (): BreadcrumbItem[] => {
@@ -86,6 +100,12 @@ export default function DashboardPage() {
           { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
           { name: 'System', current: false, onClick: () => setCurrentView('health-check') },
           { name: 'Health Check', current: true }
+        ];
+      case 'users':
+        return [
+          { name: 'Dashboard', current: false, onClick: () => setCurrentView('dashboard') },
+          { name: 'Admin', current: false, onClick: () => setCurrentView('users') },
+          { name: 'User Management', current: true }
         ];
       default:
         return [];
@@ -124,10 +144,10 @@ export default function DashboardPage() {
     },
     { 
       name: 'Users', 
-      view: null, 
+      view: 'users' as const, 
       icon: UsersIcon, 
-      current: false,
-      onClick: () => console.log('Users - Coming soon')
+      current: currentView === 'users',
+      onClick: () => setCurrentView('users')
     },
   ];
 
@@ -146,6 +166,13 @@ export default function DashboardPage() {
     // Fetch dashboard data
     fetchDashboardData();
   }, [router]);
+
+  useEffect(() => {
+    // Fetch users when view changes to users
+    if (currentView === 'users') {
+      fetchUsers();
+    }
+  }, [currentView]);
 
   const fetchDashboardData = async () => {
     try {
@@ -234,6 +261,49 @@ export default function DashboardPage() {
       // Force redirect even if logout API fails
       router.replace('/login');
     }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      console.log('🔄 Fetching users...');
+      setUsersLoading(true);
+      setUsersError(null);
+      
+      const usersData = await ApiService.getUsers();
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      setUsersError(error instanceof Error ? error.message : 'Failed to fetch users');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleUserSelect = (user: User) => {
+    setSelectedUser(user);
+    setShowUserDetails(true);
+  };
+
+  const handleUserEdit = (user: User) => {
+    setEditingUser(user);
+    setShowUserEdit(true);
+  };
+
+  const handleUserSave = (updatedUser: User) => {
+    setUsers(prevUsers => 
+      prevUsers.map(user => user.id === updatedUser.id ? updatedUser : user)
+    );
+    setShowUserEdit(false);
+    setEditingUser(null);
+  };
+
+  const handleUserAdd = () => {
+    setShowUserAdd(true);
+  };
+
+  const handleUserCreateSuccess = (newUser: User) => {
+    setUsers(prevUsers => [newUser, ...prevUsers]);
+    setShowUserAdd(false);
   };
 
 
@@ -534,7 +604,8 @@ export default function DashboardPage() {
           {currentView === 'dashboard' ? 'Dashboard' : 
            currentView === 'upsert-records' ? 'Upload Documents' : 
            currentView === 'vector-search' ? 'Vector Search' :
-           'Health Check'}
+           currentView === 'health-check' ? 'Health Check' :
+           'User Management'}
         </div>
         <a href="#">
           <span className="sr-only">Your profile</span>
@@ -662,6 +733,64 @@ export default function DashboardPage() {
               <ContentContainer>
                 <HealthCheckDisplay />
               </ContentContainer>
+            </>
+          )}
+
+          {currentView === 'users' && (
+            <>
+              {/* Page Header */}
+              <PageHeader
+                title="User Management"
+                description="Manage user accounts, roles, and permissions"
+                icon={<UsersIcon className="size-5 sm:size-6 text-indigo-600" />}
+                className="mb-8"
+              />
+
+              {/* User Management Display */}
+              <ContentContainer>
+                <UserListDisplay
+                  users={users}
+                  loading={usersLoading}
+                  error={usersError}
+                  currentUser={user}
+                  onRefresh={fetchUsers}
+                  onUserSelect={handleUserSelect}
+                  onUserEdit={handleUserEdit}
+                  onUserAdd={handleUserAdd}
+                />
+              </ContentContainer>
+
+              {/* User Details Modal */}
+              <UserDetailsModal
+                user={selectedUser}
+                isOpen={showUserDetails}
+                onClose={() => {
+                  setShowUserDetails(false);
+                  setSelectedUser(null);
+                }}
+                onEdit={(user) => {
+                  setShowUserDetails(false);
+                  handleUserEdit(user);
+                }}
+              />
+
+              {/* User Edit Form */}
+              <UserEditForm
+                user={editingUser}
+                isOpen={showUserEdit}
+                onClose={() => {
+                  setShowUserEdit(false);
+                  setEditingUser(null);
+                }}
+                onSave={handleUserSave}
+              />
+
+              {/* User Add Form */}
+              <UserAddForm
+                isOpen={showUserAdd}
+                onClose={() => setShowUserAdd(false)}
+                onSuccess={handleUserCreateSuccess}
+              />
             </>
           )}
         </ContentContainer>
