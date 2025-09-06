@@ -37,7 +37,7 @@ export default function UpsertRecordsForm() {
     sourceLinks: {},
     customMetadata: {
       sensitivity: 'internal',
-      source_type: []
+      source_type: ''
     },
     additionalFields: []
   });
@@ -75,7 +75,7 @@ export default function UpsertRecordsForm() {
       setFormState(prev => {
         const newFiles = [...prev.files, ...validFiles];
         const newSourceLinks = { ...prev.sourceLinks };
-        const sourceTypes = [...new Set(newFiles.map(f => 'pdf'))];
+        const sourceType = 'pdf';
 
         // Initialize source links for new files
         validFiles.forEach(file => {
@@ -90,7 +90,7 @@ export default function UpsertRecordsForm() {
           sourceLinks: newSourceLinks,
           customMetadata: {
             ...prev.customMetadata,
-            source_type: sourceTypes
+            source_type: sourceType
           }
         };
       });
@@ -166,7 +166,7 @@ export default function UpsertRecordsForm() {
         delete newSourceLinks[fileToRemove.name];
       }
       
-      const sourceTypes = [...new Set(newFiles.map(f => 'pdf'))];
+      const sourceType = newFiles.length > 0 ? 'pdf' : '';
 
       return {
         ...prev,
@@ -174,7 +174,7 @@ export default function UpsertRecordsForm() {
         sourceLinks: newSourceLinks,
         customMetadata: {
           ...prev.customMetadata,
-          source_type: sourceTypes.length > 0 ? sourceTypes : []
+          source_type: sourceType
         }
       };
     });
@@ -307,7 +307,7 @@ export default function UpsertRecordsForm() {
           sourceLinks: {},
           customMetadata: {
             sensitivity: 'internal',
-            source_type: []
+            source_type: ''
           },
           additionalFields: []
         });
@@ -769,7 +769,7 @@ export default function UpsertRecordsForm() {
                 <div className="bg-gray-50 rounded-lg px-4 py-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-700 font-medium">
-                      {formState.customMetadata.source_type.join(', ').toUpperCase() || 'No files uploaded'}
+                      {formState.customMetadata.source_type?.toUpperCase() || 'No files uploaded'}
                     </span>
                     <div className="inline-flex items-center rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-gray-600">
                       Auto-detected

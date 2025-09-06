@@ -14,7 +14,7 @@ export interface SourceLink {
 
 export interface CustomMetadata {
   sensitivity: 'internal' | 'external';
-  source_type: string[];
+  source_type: string;
   [key: string]: any;
 }
 

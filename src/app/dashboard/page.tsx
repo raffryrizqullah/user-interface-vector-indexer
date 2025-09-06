@@ -4,10 +4,20 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService, User as AuthUser } from '@/lib/auth';
 import { ApiService, User } from '@/lib/api';
+
+interface DashboardData {
+  basicHealth?: Record<string, unknown>;
+  pineconeHealth?: Record<string, unknown>;
+  namespaceStats?: Record<string, unknown>;
+  recordsList?: Record<string, unknown>;
+  users?: Record<string, unknown>;
+}
+import { auth, UserRole } from '@/lib/authorization';
+import AuthGuard from '@/components/ui/AuthGuard';
 import PineconeIndexCard from '@/components/dashboard/PineconeIndexCard';
 import StatsWithIcons, { StatItem } from '@/components/dashboard/StatsWithIcons';
 import QuickAccessCards, { QuickAccessItem } from '@/components/dashboard/QuickAccessCards';
-import RecentActivity, { ActivityItem } from '@/components/dashboard/RecentActivity';
+import RecentActivity from '@/components/dashboard/RecentActivity';
 import UpsertRecordsForm from '@/components/forms/UpsertRecordsForm';
 import VectorSearchForm, { SearchResults } from '@/components/forms/VectorSearchForm';
 import VectorListDisplay from '@/components/search/VectorListDisplay';
@@ -56,8 +66,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [previousDashboardData, setPreviousDashboardData] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [previousDashboardData, setPreviousDashboardData] = useState<DashboardData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
   const [currentView, setCurrentView] = useState<'dashboard' | 'upsert-records' | 'vector-search' | 'health-check' | 'users' | 'activity-logs' | 'settings'>('dashboard');
@@ -122,58 +132,70 @@ export default function DashboardPage() {
     }
   };
 
-  // Navigation items with onClick handlers
-  const navigation = [
+  // Navigation items with role-based access control
+  const allNavigationItems = [
     { 
       name: 'Dashboard', 
       view: 'dashboard' as const, 
       icon: HomeIcon, 
       current: currentView === 'dashboard',
-      onClick: () => setCurrentView('dashboard')
+      onClick: () => setCurrentView('dashboard'),
+      requiredRole: 'admin' as UserRole, // All authenticated users can access dashboard
     },
     { 
       name: 'Documents', 
       view: 'upsert-records' as const, 
       icon: DocumentDuplicateIcon, 
       current: currentView === 'upsert-records',
-      onClick: () => setCurrentView('upsert-records')
+      onClick: () => setCurrentView('upsert-records'),
+      requiredRole: 'admin' as UserRole, // Admin and super_admin can manage documents
     },
     { 
       name: 'Vector Search', 
       view: 'vector-search' as const, 
       icon: MagnifyingGlassIcon, 
       current: currentView === 'vector-search',
-      onClick: () => setCurrentView('vector-search')
+      onClick: () => setCurrentView('vector-search'),
+      requiredRole: 'admin' as UserRole, // Admin and super_admin can search vectors
     },
     { 
       name: 'Health Check', 
       view: 'health-check' as const, 
       icon: HeartIcon, 
       current: currentView === 'health-check',
-      onClick: () => setCurrentView('health-check')
+      onClick: () => setCurrentView('health-check'),
+      requiredRole: 'admin' as UserRole, // Admin and super_admin can check health
     },
     { 
       name: 'Users', 
       view: 'users' as const, 
       icon: UsersIcon, 
       current: currentView === 'users',
-      onClick: () => setCurrentView('users')
+      onClick: () => setCurrentView('users'),
+      requiredRole: 'super_admin' as UserRole, // Only super_admin can manage users
     },
     { 
       name: 'Activity Logs', 
       view: 'activity-logs' as const, 
       icon: ClipboardDocumentListIcon, 
       current: currentView === 'activity-logs',
-      onClick: () => setCurrentView('activity-logs')
+      onClick: () => setCurrentView('activity-logs'),
+      requiredRole: 'admin' as UserRole, // Admin and super_admin can view activity logs
     },
     { 
       name: 'Settings', 
       view: 'settings' as const, 
       icon: Cog6ToothIcon, 
       current: currentView === 'settings',
-      onClick: () => setCurrentView('settings')
+      onClick: () => setCurrentView('settings'),
+      requiredRole: 'super_admin' as UserRole, // Only super_admin can access settings
     },
   ];
+
+  // Filter navigation based on user role
+  const navigation = allNavigationItems.filter(item => 
+    auth.hasMinimumRole(item.requiredRole)
+  );
 
   useEffect(() => {
     // Check authentication status
@@ -197,6 +219,15 @@ export default function DashboardPage() {
       fetchUsers();
     }
   }, [currentView]);
+
+  useEffect(() => {
+    // Auto-redirect if user doesn't have access to current view
+    const currentNavItem = allNavigationItems.find(item => item.view === currentView);
+    if (currentNavItem && !auth.hasMinimumRole(currentNavItem.requiredRole)) {
+      console.log(`🔒 User doesn't have access to ${currentView}, redirecting to dashboard`);
+      setCurrentView('dashboard');
+    }
+  }, [currentView, user]);
 
   const fetchDashboardData = async () => {
     try {
@@ -303,12 +334,12 @@ export default function DashboardPage() {
     }
   };
 
-  const handleUserSelect = (user: User) => {
+  const handleUserSelect = (user: User): void => {
     setSelectedUser(user);
     setShowUserDetails(true);
   };
 
-  const handleUserEdit = (user: User) => {
+  const handleUserEdit = (user: User): void => {
     setEditingUser(user);
     setShowUserEdit(true);
   };
@@ -505,8 +536,12 @@ export default function DashboardPage() {
                           {user?.username.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="sr-only">Your profile</span>
-                      <span aria-hidden="true">{user?.username}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">{user?.username}</span>
+                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${auth.getRoleBadgeClasses()}`}>
+                          {auth.getRoleDisplayName()}
+                        </span>
+                      </div>
                     </a>
                   </li>
                 </ul>
@@ -566,8 +601,12 @@ export default function DashboardPage() {
                       {user?.username.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="sr-only">Your profile</span>
-                  <span aria-hidden="true">{user?.username}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">{user?.username}</span>
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${auth.getRoleBadgeClasses()}`}>
+                      {auth.getRoleDisplayName()}
+                    </span>
+                  </div>
                 </a>
               </li>
             </ul>
@@ -589,14 +628,19 @@ export default function DashboardPage() {
            currentView === 'activity-logs' ? 'Activity Logs' :
            'Settings'}
         </div>
-        <a href="#">
-          <span className="sr-only">Your profile</span>
+        <div className="flex items-center space-x-3">
+          <div className="text-right hidden sm:block">
+            <div className="text-xs font-medium text-white">{user?.username}</div>
+            <div className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${auth.getRoleBadgeClasses()}`}>
+              {auth.getRoleDisplayName()}
+            </div>
+          </div>
           <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
             <span className="text-sm font-medium text-white">
               {user?.username.charAt(0).toUpperCase()}
             </span>
           </div>
-        </a>
+        </div>
       </div>
 
       <main className="py-6 lg:py-10 lg:pl-72">
@@ -725,7 +769,7 @@ export default function DashboardPage() {
           )}
 
           {currentView === 'users' && (
-            <>
+            <AuthGuard requiredRole="super_admin">
               {/* Page Header */}
               <PageHeader
                 title="User Management"
@@ -779,7 +823,7 @@ export default function DashboardPage() {
                 onClose={() => setShowUserAdd(false)}
                 onSuccess={handleUserCreateSuccess}
               />
-            </>
+            </AuthGuard>
           )}
 
           {currentView === 'activity-logs' && (
@@ -800,7 +844,7 @@ export default function DashboardPage() {
           )}
 
           {currentView === 'settings' && (
-            <>
+            <AuthGuard requiredRole="super_admin">
               {/* Page Header */}
               <PageHeader
                 title="Settings"
@@ -811,7 +855,7 @@ export default function DashboardPage() {
 
               {/* Settings Layout */}
               <SettingsLayout />
-            </>
+            </AuthGuard>
           )}
         </ContentContainer>
       </main>
