@@ -6,14 +6,9 @@ import {
   UserIcon,
   LockClosedIcon,
   Cog6ToothIcon,
-  ClockIcon,
-  QuestionMarkCircleIcon,
-  ShieldCheckIcon,
-  BellIcon,
-  GlobeAltIcon
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import { SettingsCategory, SettingsSectionProps, UserPreferences, ProfileUpdateData } from '@/types/settings';
-import { User } from '@/lib/api';
 import ProfileSettings from './ProfileSettings';
 import SecuritySettings from './SecuritySettings';
 import PreferencesSettings from './PreferencesSettings';

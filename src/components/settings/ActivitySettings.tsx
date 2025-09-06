@@ -6,7 +6,6 @@ import {
   ClockIcon,
   ArrowDownTrayIcon,
   TrashIcon,
-  EyeIcon,
   ExclamationTriangleIcon,
   DocumentArrowDownIcon,
   InformationCircleIcon

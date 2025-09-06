@@ -2,6 +2,44 @@ import { AuthService } from './auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
+// Dashboard data interfaces
+interface BasicHealthData {
+  status: string;
+  timestamp?: string;
+}
+
+interface PineconeHealthData {
+  success: boolean;
+  index_name?: string;
+  host?: string;
+  config?: {
+    metric?: string;
+    dimension?: number;
+    cloud?: string;
+    region?: string;
+  };
+  message?: string;
+}
+
+interface NamespaceStatsData {
+  namespace_exists?: boolean;
+  stats?: {
+    vector_count: number;
+  };
+}
+
+interface RecordsListData {
+  vector_ids?: string[];
+}
+
+interface DashboardDataType {
+  basicHealth?: BasicHealthData;
+  pineconeHealth?: PineconeHealthData;
+  namespaceStats?: NamespaceStatsData;
+  recordsList?: RecordsListData;
+  users?: User[];
+}
+
 // Types based on the knowledge-base API documentation
 export interface HealthResponse {
   status: string;
@@ -512,7 +550,7 @@ export class ApiService {
   }
 
   // Helper methods for dashboard statistics
-  static calculateStats(data: any, previousData?: any) {
+  static calculateStats(data: DashboardDataType, previousData?: DashboardDataType) {
     const stats = {
       totalDocuments: 0,
       vectorRecords: 0,
@@ -613,7 +651,7 @@ export class ApiService {
   }
 
   // Helper method to calculate just the numeric values for comparison
-  private static calculateStatsValues(data: any) {
+  private static calculateStatsValues(data: DashboardDataType) {
     return {
       totalDocuments: data.recordsList?.vector_ids ? 
         new Set(data.recordsList.vector_ids.map((id: string) => id.split('_')[0]).filter(Boolean)).size : 0,
@@ -624,7 +662,7 @@ export class ApiService {
   }
 
   // Calculate active namespaces from available data
-  private static calculateActiveNamespaces(data: any) {
+  private static calculateActiveNamespaces(data: DashboardDataType) {
     // If we have namespace stats, we know at least one namespace exists
     let count = 0;
     
@@ -643,7 +681,7 @@ export class ApiService {
   }
 
   // Determine overall system health
-  private static determineSystemHealth(data: any) {
+  private static determineSystemHealth(data: DashboardDataType) {
     const checks = {
       basicHealth: data.basicHealth?.status === 'healthy',
       pineconeHealth: data.pineconeHealth?.success === true,

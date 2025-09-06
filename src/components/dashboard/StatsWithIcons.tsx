@@ -3,7 +3,6 @@
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
 import { 
   DocumentTextIcon, 
-  ChartBarIcon, 
   FolderIcon, 
   UserGroupIcon,
   CubeIcon 

@@ -6,11 +6,11 @@ import { AuthService, User as AuthUser } from '@/lib/auth';
 import { ApiService, User } from '@/lib/api';
 
 interface DashboardData {
-  basicHealth?: Record<string, unknown>;
-  pineconeHealth?: Record<string, unknown>;
-  namespaceStats?: Record<string, unknown>;
-  recordsList?: Record<string, unknown>;
-  users?: Record<string, unknown>;
+  basicHealth?: Record<string, unknown> | null;
+  pineconeHealth?: Record<string, unknown> | null;
+  namespaceStats?: Record<string, unknown> | null;
+  recordsList?: Record<string, unknown> | null;
+  users?: Record<string, unknown> | null;
 }
 import { auth, UserRole } from '@/lib/authorization';
 import AuthGuard from '@/components/ui/AuthGuard';

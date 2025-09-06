@@ -8,9 +8,6 @@ import {
   ComputerDesktopIcon,
   BellIcon,
   EnvelopeIcon,
-  GlobeAltIcon,
-  ClockIcon,
-  CalendarDaysIcon,
   CogIcon
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/20/solid';

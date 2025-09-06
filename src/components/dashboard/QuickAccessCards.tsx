@@ -5,10 +5,7 @@ import { EllipsisHorizontalIcon } from '@heroicons/react/20/solid';
 import { 
   DocumentPlusIcon,
   MagnifyingGlassIcon,
-  HeartIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon
+  HeartIcon
 } from '@heroicons/react/24/outline';
 
 const statuses = {
