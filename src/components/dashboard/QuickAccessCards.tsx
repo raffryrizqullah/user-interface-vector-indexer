@@ -13,7 +13,7 @@ import {
 
 const statuses = {
   Active: 'text-green-700 bg-green-50 ring-green-600/20',
-  Processing: 'text-yellow-600 bg-yellow-50 ring-yellow-500/10',
+  Processing: 'text-gold-university-800 bg-gold-university-50 ring-gold-university-600/20',
   Error: 'text-red-700 bg-red-50 ring-red-600/10',
   Connected: 'text-green-700 bg-green-50 ring-green-600/20',
   Disconnected: 'text-red-700 bg-red-50 ring-red-600/10',
@@ -55,7 +55,7 @@ const defaultItems: QuickAccessItem[] = [
     id: 1,
     name: 'Create Records',
     icon: DocumentPlusIcon,
-    iconBgColor: 'bg-blue-500',
+    iconBgColor: 'bg-blue-university-600',
     description: 'Upload and process PDF documents into vector embeddings',
     lastActivity: {
       label: 'Last upload',
@@ -105,7 +105,7 @@ const defaultItems: QuickAccessItem[] = [
     id: 3,
     name: 'System Health',
     icon: HeartIcon,
-    iconBgColor: 'bg-green-500',
+    iconBgColor: 'bg-blue-university-500',
     description: 'Monitor Pinecone connectivity and system performance',
     lastActivity: {
       label: 'Last check',
@@ -161,7 +161,7 @@ export default function QuickAccessCards({ items = defaultItems, isLoading = fal
   if (isLoading) {
     return (
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <h3 className="text-base font-semibold text-blue-university-900 mb-4">Quick Actions</h3>
         <ul role="list" className="grid grid-cols-1 gap-x-6 gap-y-8 lg:grid-cols-3 xl:gap-x-8">
           {[1, 2, 3].map((i) => (
             <QuickAccessCardSkeleton key={i} />

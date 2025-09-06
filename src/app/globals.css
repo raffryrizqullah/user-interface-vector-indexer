@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* University Brand Colors */
+  --university-blue: #00529B;
+  --university-gold: #FFC107;
 }
 
 @theme inline {
@@ -10,6 +14,29 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* University Brand Colors */
+  --color-blue-university-50: #e6f2ff;
+  --color-blue-university-100: #cce5ff;
+  --color-blue-university-200: #99cbff;
+  --color-blue-university-300: #66b1ff;
+  --color-blue-university-400: #3397ff;
+  --color-blue-university-500: #007fff;
+  --color-blue-university-600: var(--university-blue);
+  --color-blue-university-700: #003d73;
+  --color-blue-university-800: #002b52;
+  --color-blue-university-900: #001a30;
+  
+  --color-gold-university-50: #fffef5;
+  --color-gold-university-100: #fffceb;
+  --color-gold-university-200: #fff8cc;
+  --color-gold-university-300: #fff3ad;
+  --color-gold-university-400: #ffed6f;
+  --color-gold-university-500: #ffe730;
+  --color-gold-university-600: var(--university-gold);
+  --color-gold-university-700: #cc9a00;
+  --color-gold-university-800: #997400;
+  --color-gold-university-900: #664d00;
 }
 
 @media (prefers-color-scheme: dark) {

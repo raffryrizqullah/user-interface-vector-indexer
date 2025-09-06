@@ -52,6 +52,7 @@ import {
   HeartIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 
 // Navigation items will be defined inside the component to access setCurrentView
@@ -383,7 +384,7 @@ export default function DashboardPage() {
       id: 1,
       name: 'Create Records',
       icon: DocumentPlusIcon,
-      iconBgColor: 'bg-blue-500',
+      iconBgColor: 'bg-blue-university-600',
       description: 'Upload and process PDF documents into vector embeddings',
       lastActivity: {
         label: 'Last upload',
@@ -408,7 +409,7 @@ export default function DashboardPage() {
       id: 2,
       name: 'Search Records',
       icon: MagnifyingGlassIcon,
-      iconBgColor: 'bg-purple-500',
+      iconBgColor: 'bg-gold-university-600',
       description: 'Search through vector embeddings and find similar content',
       lastActivity: {
         label: 'Last search',
@@ -433,7 +434,7 @@ export default function DashboardPage() {
       id: 3,
       name: 'System Health',
       icon: HeartIcon,
-      iconBgColor: 'bg-green-500',
+      iconBgColor: 'bg-blue-university-500',
       description: 'Monitor Pinecone connectivity and system performance',
       lastActivity: {
         label: 'Last check',
@@ -460,8 +461,11 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-university-200 border-t-blue-university-600 mx-auto"></div>
+          <p className="mt-4 text-blue-university-600 font-medium">Loading Dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -488,14 +492,12 @@ export default function DashboardPage() {
               </div>
             </TransitionChild>
             {/* Mobile sidebar */}
-            <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-indigo-600 px-6 pb-4">
+            <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-university-600 px-6 pb-4">
               <div className="flex h-16 shrink-0 items-center">
-                <img
-                  alt="Vector Indexer"
-                  src="https://tailwindui.com/plus-assets/img/logos/mark.svg?color=white"
-                  className="h-8 w-auto"
-                />
-                <span className="ml-2 text-lg font-semibold text-white">Vector Indexer</span>
+                <div className="rounded-full bg-gold-university-600 p-2">
+                  <AcademicCapIcon className="h-8 w-8 text-blue-university-800" />
+                </div>
+                <span className="ml-3 text-lg font-semibold text-white">Vector Indexer</span>
               </div>
               <nav className="flex flex-1 flex-col">
                 <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -507,15 +509,15 @@ export default function DashboardPage() {
                             onClick={item.onClick}
                             className={classNames(
                               item.current
-                                ? 'bg-indigo-700 text-white'
-                                : 'text-indigo-200 hover:bg-indigo-700 hover:text-white',
-                              'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold w-full text-left',
+                                ? 'bg-blue-university-700 text-white border-l-4 border-gold-university-500'
+                                : 'text-blue-university-200 hover:bg-blue-university-700 hover:text-white hover:border-l-4 hover:border-gold-university-400',
+                              'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold w-full text-left transition-all',
                             )}
                           >
                             <item.icon
                               aria-hidden="true"
                               className={classNames(
-                                item.current ? 'text-white' : 'text-indigo-200 group-hover:text-white',
+                                item.current ? 'text-gold-university-400' : 'text-blue-university-200 group-hover:text-gold-university-300',
                                 'size-6 shrink-0',
                               )}
                             />
@@ -529,16 +531,16 @@ export default function DashboardPage() {
                     <a
                       href="#"
                       onClick={handleLogout}
-                      className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-indigo-700"
+                      className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-blue-university-700 transition-colors"
                     >
-                      <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
-                        <span className="text-sm font-medium text-white">
+                      <div className="size-8 rounded-full bg-gold-university-600 flex items-center justify-center">
+                        <span className="text-sm font-medium text-blue-university-800">
                           {user?.username.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold">{user?.username}</span>
-                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${auth.getRoleBadgeClasses()}`}>
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-gold-university-100 text-gold-university-800 ring-1 ring-inset ring-gold-university-300">
                           {auth.getRoleDisplayName()}
                         </span>
                       </div>
@@ -553,14 +555,12 @@ export default function DashboardPage() {
 
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-indigo-600 px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-university-600 px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center">
-            <img
-              alt="Vector Indexer"
-              src="https://tailwindui.com/plus-assets/img/logos/mark.svg?color=white"
-              className="h-8 w-auto"
-            />
-            <span className="ml-2 text-lg font-semibold text-white">Vector Indexer</span>
+            <div className="rounded-full bg-gold-university-600 p-2">
+              <AcademicCapIcon className="h-8 w-8 text-blue-university-800" />
+            </div>
+            <span className="ml-3 text-lg font-semibold text-white">Vector Indexer</span>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -572,15 +572,15 @@ export default function DashboardPage() {
                         onClick={item.onClick}
                         className={classNames(
                           item.current
-                            ? 'bg-indigo-700 text-white'
-                            : 'text-indigo-200 hover:bg-indigo-700 hover:text-white',
-                          'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold w-full text-left',
+                            ? 'bg-blue-university-700 text-white border-l-4 border-gold-university-500'
+                            : 'text-blue-university-200 hover:bg-blue-university-700 hover:text-white hover:border-l-4 hover:border-gold-university-400',
+                          'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold w-full text-left transition-all',
                         )}
                       >
                         <item.icon
                           aria-hidden="true"
                           className={classNames(
-                            item.current ? 'text-white' : 'text-indigo-200 group-hover:text-white',
+                            item.current ? 'text-gold-university-400' : 'text-blue-university-200 group-hover:text-gold-university-300',
                             'size-6 shrink-0',
                           )}
                         />
@@ -594,16 +594,16 @@ export default function DashboardPage() {
                 <a
                   href="#"
                   onClick={handleLogout}
-                  className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-indigo-700"
+                  className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-blue-university-700 transition-colors"
                 >
-                  <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
-                    <span className="text-sm font-medium text-white">
+                  <div className="size-8 rounded-full bg-gold-university-600 flex items-center justify-center">
+                    <span className="text-sm font-medium text-blue-university-800">
                       {user?.username.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">{user?.username}</span>
-                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${auth.getRoleBadgeClasses()}`}>
+                    <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-gold-university-100 text-gold-university-800 ring-1 ring-inset ring-gold-university-300">
                       {auth.getRoleDisplayName()}
                     </span>
                   </div>
@@ -614,8 +614,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="sticky top-0 z-40 flex items-center gap-x-6 bg-indigo-600 px-4 py-4 shadow-xs sm:px-6 lg:hidden">
-        <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-indigo-200 lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-x-6 bg-blue-university-600 px-4 py-4 shadow-lg sm:px-6 lg:hidden">
+        <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-blue-university-200 lg:hidden hover:text-gold-university-300 transition-colors">
           <span className="sr-only">Open sidebar</span>
           <Bars3Icon aria-hidden="true" className="size-6" />
         </button>
@@ -631,12 +631,12 @@ export default function DashboardPage() {
         <div className="flex items-center space-x-3">
           <div className="text-right hidden sm:block">
             <div className="text-xs font-medium text-white">{user?.username}</div>
-            <div className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${auth.getRoleBadgeClasses()}`}>
+            <div className="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium bg-gold-university-100 text-gold-university-800 ring-1 ring-inset ring-gold-university-300">
               {auth.getRoleDisplayName()}
             </div>
           </div>
-          <div className="size-8 rounded-full bg-indigo-700 flex items-center justify-center">
-            <span className="text-sm font-medium text-white">
+          <div className="size-8 rounded-full bg-gold-university-600 flex items-center justify-center">
+            <span className="text-sm font-medium text-blue-university-800">
               {user?.username.charAt(0).toUpperCase()}
             </span>
           </div>
